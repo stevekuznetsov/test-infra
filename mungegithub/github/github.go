@@ -501,7 +501,7 @@ func (config *Config) PreExecute() error {
 	} else if user.Login == nil {
 		return errors.New("failed to retrieve currently authenticatd user: got nil result for user login")
 	}
-	config.BotName = *user.Login
+	config.BotName = "openshift-merge-robot"
 
 	return nil
 }
