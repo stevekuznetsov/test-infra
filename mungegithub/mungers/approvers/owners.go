@@ -457,10 +457,9 @@ func (ap Approvers) IsApproved() bool {
 	return ap.UnapprovedFiles().Len() == 0
 }
 
-// IsApprovedWithIssue verifies that the PR is approved, and has an
-// associated issue or a valid "no-issue" approver.
+// IsApprovedWithIssue verifies that the PR is approved
 func (ap Approvers) IsApprovedWithIssue() bool {
-	return ap.IsApproved() && (ap.AssociatedIssue != 0 || len(ap.NoIssueApprovers()) != 0)
+	return ap.IsApproved()
 }
 
 // ListApprovals returns the list of approvals
