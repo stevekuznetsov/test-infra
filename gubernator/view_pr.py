@@ -74,11 +74,7 @@ def pr_builds(path, pr):
 class PRHandler(view_base.BaseHandler):
     """Show a list of test runs for a PR."""
     def get(self, path, pr):
-        if path:
-            repo = 'kubernetes/%s' % path.strip('/')
-        else:
-            path = ''
-            repo = 'kubernetes/kubernetes'
+        repo = 'openshift/origin'
         builds = pr_builds(path, pr)
         for bs in builds.itervalues():
             if any(len(b) > 8 for b, _, _ in bs):
@@ -163,13 +159,13 @@ class PRDashboard(view_base.BaseHandler):
                      'OR "additional approver: {0}")'.format(user)),
                     ('Incoming', lambda p: user != p.payload['author'] and
                                            user in p.payload['assignees'],
-                     'is:open is:pr user:kubernetes assignee:%s' % user),
+                     'is:open is:pr user:openshift assignee:%s' % user),
                     ('Outgoing', lambda p: user == p.payload['author'],
-                     'is:open is:pr user:kubernetes author:%s' % user),
+                     'is:open is:pr user:openshift author:%s' % user),
                 ]
             else:
-                cats = [('Open Kubernetes PRs', lambda x: True,
-                    'is:open is:pr user:kubernetes')]
+                cats = [('Open OpenShift Origin PRs', lambda x: True,
+                    'is:open is:pr user:openshift')]
 
             self.render('pr_dashboard.html', dict(
                 prs=prs, cats=cats, user=user, login=login, acks=acks))
