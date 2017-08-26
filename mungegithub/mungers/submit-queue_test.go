@@ -122,6 +122,10 @@ func MissingReleaseNoteIssue() *github.Issue {
 	return github_test.Issue(someUserName, 1, []string{claYesLabel, lgtmLabel, approvedLabel, releaseNoteLabelNeeded}, true)
 }
 
+func HoldLabelIssue() *github.Issue {
+	return github_test.Issue(someUserName, 1, []string{claYesLabel, lgtmLabel, approvedLabel, holdLabel}, true)
+}
+
 func DoNotMergeMilestoneIssue() *github.Issue {
 	issue := github_test.Issue(someUserName, 1, []string{claYesLabel, lgtmLabel}, true)
 	milestone := &github.Milestone{
@@ -800,6 +804,20 @@ func TestSubmitQueue(t *testing.T) {
 			retest1Pass:     true,
 			retest2Pass:     true,
 			reason:          noMergeMessage(releaseNoteLabelNeeded),
+			state:           "pending",
+		},
+		{
+			name:            "Fail because hold label is present",
+			pr:              ValidPR(),
+			issue:           HoldLabelIssue(),
+			events:          NewLGTMEvents(),
+			commits:         Commits(), // Modified at time.Unix(7), 8, and 9
+			ciStatus:        SuccessStatus(),
+			lastBuildNumber: LastBuildNumber(),
+			gcsResult:       SuccessGCS(),
+			retest1Pass:     true,
+			retest2Pass:     true,
+			reason:          noMergeMessage(holdLabel),
 			state:           "pending",
 		},
 		{
