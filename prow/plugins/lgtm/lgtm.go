@@ -61,22 +61,6 @@ type githubClient interface {
 	GetIssueLabels(org, repo string, number int) ([]github.Label, error)
 }
 
-// prLabelChecker returns a function that lazily checks if a label is applied to a pr.
-func prLabelChecker(gc githubClient, log *logrus.Entry, org, repo string, num int) func(string) (bool, error) {
-	return func(label string) (bool, error) {
-		labels, err := gc.GetIssueLabels(org, repo, num)
-		if err != nil {
-			return false, err
-		}
-		for _, candidate := range labels {
-			if candidate.Name == label {
-				return true, nil
-			}
-		}
-		return false, nil
-	}
-}
-
 func handleIssueComment(pc plugins.PluginClient, ic github.IssueCommentEvent) error {
 	// Only consider open PRs.
 	if !ic.Issue.IsPullRequest() || ic.Issue.State != "open" || ic.Action != github.IssueCommentActionCreated {
@@ -110,13 +94,15 @@ func handleReview(pc plugins.PluginClient, re github.ReviewEvent) error {
 		commentAuthor: re.Review.User.Login,
 		body:          re.Review.Body,
 		assignees:     re.PullRequest.Assignees,
-		hasLabel: prLabelChecker(
-			pc.GitHubClient,
-			pc.Logger,
-			re.Repo.Owner.Login,
-			re.Repo.Name,
-			re.PullRequest.Number,
-		),
+		hasLabel: func(label string) (bool, error) {
+			return github.HasLabel(
+				pc.GitHubClient,
+				re.Repo.Owner.Login,
+				re.Repo.Name,
+				re.PullRequest.Number,
+				label,
+			)
+		},
 		htmlurl: re.Review.HTMLURL,
 	}
 	return handle(pc.GitHubClient, pc.Logger, e)
@@ -135,13 +121,15 @@ func handleReviewComment(pc plugins.PluginClient, rce github.ReviewCommentEvent)
 		commentAuthor: rce.Comment.User.Login,
 		body:          rce.Comment.Body,
 		assignees:     rce.PullRequest.Assignees,
-		hasLabel: prLabelChecker(
-			pc.GitHubClient,
-			pc.Logger,
-			rce.Repo.Owner.Login,
-			rce.Repo.Name,
-			rce.PullRequest.Number,
-		),
+		hasLabel: func(label string) (bool, error) {
+			return github.HasLabel(
+				pc.GitHubClient,
+				rce.Repo.Owner.Login,
+				rce.Repo.Name,
+				rce.PullRequest.Number,
+				label,
+			)
+		},
 		htmlurl: rce.Comment.HTMLURL,
 	}
 	return handle(pc.GitHubClient, pc.Logger, e)

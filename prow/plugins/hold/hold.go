@@ -25,6 +25,8 @@ import (
 
 	"github.com/Sirupsen/logrus"
 
+	"fmt"
+
 	"k8s.io/test-infra/prow/github"
 	"k8s.io/test-infra/prow/plugins"
 )
@@ -50,6 +52,8 @@ type event struct {
 
 func init() {
 	plugins.RegisterIssueCommentHandler(pluginName, handleIssueComment)
+	plugins.RegisterReviewEventHandler(pluginName, handleReview)
+	plugins.RegisterReviewCommentEventHandler(pluginName, handleReviewComment)
 }
 
 type githubClient interface {
@@ -74,6 +78,64 @@ func handleIssueComment(pc plugins.PluginClient, ic github.IssueCommentEvent) er
 		body:          ic.Comment.Body,
 		hasLabel:      ic.Issue.HasLabel(label),
 		htmlurl:       ic.Comment.HTMLURL,
+	}
+	return handle(pc.GitHubClient, pc.Logger, e)
+}
+
+func handleReview(pc plugins.PluginClient, re github.ReviewEvent) error {
+	if re.Action != github.ReviewActionSubmitted {
+		return nil
+	}
+
+	var (
+		org    = re.Repo.Owner.Login
+		repo   = re.Repo.Name
+		number = re.PullRequest.Number
+	)
+
+	hasLabel, err := github.HasLabel(pc.GitHubClient, org, repo, number, label)
+	if err != nil {
+		return fmt.Errorf("failed to get the labels on %s/%s#%d: %v", org, repo, number, err)
+	}
+
+	e := &event{
+		org:           org,
+		repo:          repo,
+		number:        number,
+		prAuthor:      re.PullRequest.User.Login,
+		commentAuthor: re.Review.User.Login,
+		body:          re.Review.Body,
+		hasLabel:      hasLabel,
+		htmlurl:       re.Review.HTMLURL,
+	}
+	return handle(pc.GitHubClient, pc.Logger, e)
+}
+
+func handleReviewComment(pc plugins.PluginClient, rce github.ReviewCommentEvent) error {
+	if rce.Action != github.ReviewCommentActionCreated {
+		return nil
+	}
+
+	var (
+		org    = rce.Repo.Owner.Login
+		repo   = rce.Repo.Name
+		number = rce.PullRequest.Number
+	)
+
+	hasLabel, err := github.HasLabel(pc.GitHubClient, org, repo, number, label)
+	if err != nil {
+		return fmt.Errorf("failed to get the labels on %s/%s#%d: %v", org, repo, number, err)
+	}
+
+	e := &event{
+		org:           org,
+		repo:          repo,
+		number:        number,
+		prAuthor:      rce.PullRequest.User.Login,
+		commentAuthor: rce.Comment.User.Login,
+		body:          rce.Comment.Body,
+		hasLabel:      hasLabel,
+		htmlurl:       rce.Comment.HTMLURL,
 	}
 	return handle(pc.GitHubClient, pc.Logger, e)
 }

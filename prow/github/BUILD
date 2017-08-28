@@ -12,8 +12,10 @@ go_test(
         "client_test.go",
         "hmac_test.go",
         "links_test.go",
+        "util_test.go",
     ],
     library = ":go_default_library",
+    deps = ["//prow/github/fakegithub:go_default_library"],
 )
 
 go_library(
@@ -23,6 +25,7 @@ go_library(
         "hmac.go",
         "links.go",
         "types.go",
+        "util.go",
     ],
     deps = [
         "//vendor/github.com/shurcooL/githubql:go_default_library",
