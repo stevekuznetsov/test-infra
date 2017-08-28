@@ -43,8 +43,6 @@ type event struct {
 	org           string
 	repo          string
 	number        int
-	prAuthor      string
-	commentAuthor string
 	body          string
 	htmlurl       string
 	hasLabel      bool
@@ -73,8 +71,6 @@ func handleIssueComment(pc plugins.PluginClient, ic github.IssueCommentEvent) er
 		org:           ic.Repo.Owner.Login,
 		repo:          ic.Repo.Name,
 		number:        ic.Issue.Number,
-		prAuthor:      ic.Issue.User.Login,
-		commentAuthor: ic.Comment.User.Login,
 		body:          ic.Comment.Body,
 		hasLabel:      ic.Issue.HasLabel(label),
 		htmlurl:       ic.Comment.HTMLURL,
@@ -102,8 +98,6 @@ func handleReview(pc plugins.PluginClient, re github.ReviewEvent) error {
 		org:           org,
 		repo:          repo,
 		number:        number,
-		prAuthor:      re.PullRequest.User.Login,
-		commentAuthor: re.Review.User.Login,
 		body:          re.Review.Body,
 		hasLabel:      hasLabel,
 		htmlurl:       re.Review.HTMLURL,
@@ -131,8 +125,6 @@ func handleReviewComment(pc plugins.PluginClient, rce github.ReviewCommentEvent)
 		org:           org,
 		repo:          repo,
 		number:        number,
-		prAuthor:      rce.PullRequest.User.Login,
-		commentAuthor: rce.Comment.User.Login,
 		body:          rce.Comment.Body,
 		hasLabel:      hasLabel,
 		htmlurl:       rce.Comment.HTMLURL,
@@ -140,13 +132,9 @@ func handleReviewComment(pc plugins.PluginClient, rce github.ReviewCommentEvent)
 	return handle(pc.GitHubClient, pc.Logger, e)
 }
 
-const warning = "only PR authors can issue or cancel holds."
-
-// handle drives the pull request to the desired state. If an author adds
+// handle drives the pull request to the desired state. If any user adds
 // a /hold directive, we want to add a label if one does not already exist.
-// If they add /hold cancel, we want to remove the label if it exists. If
-// a non-author adds either, we want to leave a comment letting them know
-// they can't hold PRs unless they are the author.
+// If they add /hold cancel, we want to remove the label if it exists.
 func handle(gc githubClient, log *logrus.Entry, e *event) error {
 	needsLabel := false
 	if labelRe.MatchString(e.body) {
@@ -155,16 +143,6 @@ func handle(gc githubClient, log *logrus.Entry, e *event) error {
 		needsLabel = false
 	} else {
 		return nil
-	}
-
-	if e.commentAuthor != e.prAuthor {
-		return gc.CreateComment(
-			e.org, e.repo, e.number,
-			plugins.FormatResponseRaw(
-				e.body, e.htmlurl, e.commentAuthor,
-				warning,
-			),
-		)
 	}
 
 	if e.hasLabel && !needsLabel {

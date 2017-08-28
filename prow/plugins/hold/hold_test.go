@@ -18,7 +18,6 @@ package hold
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/Sirupsen/logrus"
@@ -30,83 +29,45 @@ import (
 func TestHandle(t *testing.T) {
 	var tests = []struct {
 		name          string
-		prAuthor      string
-		commentAuthor string
 		body          string
 		hasLabel      bool
 		shouldLabel   bool
 		shouldUnlabel bool
-		shouldComment bool
 	}{
 		{
 			name:          "nothing to do",
-			prAuthor:      "bob",
-			commentAuthor: "bill",
 			body:          "noise",
 			hasLabel:      false,
 			shouldLabel:   false,
 			shouldUnlabel: false,
-			shouldComment: false,
 		},
 		{
-			name:          "author requested hold",
-			prAuthor:      "bob",
-			commentAuthor: "bob",
+			name:          "requested hold",
 			body:          "/hold",
 			hasLabel:      false,
 			shouldLabel:   true,
 			shouldUnlabel: false,
-			shouldComment: false,
 		},
 		{
-			name:          "author requested hold, label already exists",
-			prAuthor:      "bob",
-			commentAuthor: "bob",
+			name:          "requested hold, label already exists",
 			body:          "/hold",
 			hasLabel:      true,
 			shouldLabel:   false,
 			shouldUnlabel: false,
-			shouldComment: false,
 		},
 		{
-			name:          "non-author requested hold",
-			prAuthor:      "bob",
-			commentAuthor: "bill",
-			body:          "/hold",
-			hasLabel:      false,
-			shouldLabel:   false,
-			shouldUnlabel: false,
-			shouldComment: true,
-		},
-		{
-			name:          "author requested hold cancel",
-			prAuthor:      "bob",
-			commentAuthor: "bob",
+			name:          "requested hold cancel",
 			body:          "/hold cancel",
 			hasLabel:      true,
 			shouldLabel:   false,
 			shouldUnlabel: true,
-			shouldComment: false,
 		},
 		{
-			name:          "author requested hold cancel, label already gone",
-			prAuthor:      "bob",
-			commentAuthor: "bob",
+			name:          "requested hold cancel, label already gone",
 			body:          "/hold cancel",
 			hasLabel:      false,
 			shouldLabel:   false,
 			shouldUnlabel: false,
-			shouldComment: false,
-		},
-		{
-			name:          "non-author requested hold cancel",
-			prAuthor:      "bob",
-			commentAuthor: "bill",
-			body:          "/hold cancel",
-			hasLabel:      false,
-			shouldLabel:   false,
-			shouldUnlabel: false,
-			shouldComment: true,
 		},
 	}
 
@@ -117,14 +78,12 @@ func TestHandle(t *testing.T) {
 
 		org, repo, number, htmlurl := "org", "repo", 1, "url"
 		e := &event{
-			org:           org,
-			repo:          repo,
-			number:        number,
-			prAuthor:      tc.prAuthor,
-			commentAuthor: tc.commentAuthor,
-			body:          tc.body,
-			hasLabel:      tc.hasLabel,
-			htmlurl:       htmlurl,
+			org:      org,
+			repo:     repo,
+			number:   number,
+			body:     tc.body,
+			hasLabel: tc.hasLabel,
+			htmlurl:  htmlurl,
 		}
 
 		if err := handle(fc, logrus.WithField("plugin", pluginName), e); err != nil {
@@ -146,14 +105,6 @@ func TestHandle(t *testing.T) {
 			}
 		} else if len(fc.LabelsRemoved) > 0 {
 			t.Errorf("For case %s, expected to not remove %q label but removed: %v", tc.name, label, fc.LabelsRemoved)
-		}
-
-		if tc.shouldComment {
-			if len(fc.IssueCommentsAdded) != 1 || !strings.Contains(fc.IssueCommentsAdded[0], warning) {
-				t.Errorf("For case %s: expected to add comment but instead added: %v", tc.name, fc.IssueCommentsAdded)
-			}
-		} else if len(fc.IssueCommentsAdded) > 0 {
-			t.Errorf("For case %s, expected to not add comment but added: %v", tc.name, fc.IssueCommentsAdded)
 		}
 	}
 }
