@@ -12,3 +12,4 @@ cmd/jenkins-operator/jenkins-operator
 cmd/tide/tide
 cmd/clonerefs/clonerefs
 cmd/sidecar/sidecar
+cmd/initupload/initupload

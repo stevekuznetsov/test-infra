@@ -22,6 +22,7 @@ filegroup(
         "//prow/cmd/deck:all-srcs",
         "//prow/cmd/hook:all-srcs",
         "//prow/cmd/horologium:all-srcs",
+        "//prow/cmd/initupload:all-srcs",
         "//prow/cmd/jenkins-operator:all-srcs",
         "//prow/cmd/mkpj:all-srcs",
         "//prow/cmd/phony:all-srcs",

@@ -176,6 +176,10 @@ clonerefs-image: git-image
 	docker build -t "$(REGISTRY)/$(PROJECT)/clonerefs:$(CLONEREFS_VERSION)" $(DOCKER_LABELS) cmd/clonerefs
 	$(PUSH) "$(REGISTRY)/$(PROJECT)/clonerefs:$(CLONEREFS_VERSION)"
 
+initupload-image: alpine-image
+	CGO_ENABLED=0 go build -o cmd/initupload/initupload k8s.io/test-infra/prow/cmd/initupload
+	docker build -t "$(REGISTRY)/$(PROJECT)/initupload:$(INITUPLOAD_VERSION)" $(DOCKER_LABELS) cmd/initupload
+	$(PUSH) "$(REGISTRY)/$(PROJECT)/initupload:$(INITUPLOAD_VERSION)"
 
 sidecar-image: alpine-image
 	CGO_ENABLED=0 go build -o cmd/sidecar/sidecar k8s.io/test-infra/prow/cmd/sidecar
