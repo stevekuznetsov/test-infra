@@ -39,6 +39,8 @@ JENKINS-OPERATOR_VERSION ?= 0.61
 TIDE_VERSION             ?= 0.18
 # CLONEREFS_VERSION is the version of the clonerefs image
 CLONEREFS_VERSION        ?=0.1
+# SIDECAR_VERSION is the version of the sidecar image
+SIDECAR_VERSION          ?=0.1
 
 # These are the usual GKE variables.
 PROJECT       ?= k8s-prow
@@ -173,4 +175,10 @@ clonerefs-image: git-image
 	CGO_ENABLED=0 go build -o cmd/clonerefs/clonerefs k8s.io/test-infra/prow/cmd/clonerefs
 	docker build -t "$(REGISTRY)/$(PROJECT)/clonerefs:$(CLONEREFS_VERSION)" $(DOCKER_LABELS) cmd/clonerefs
 	$(PUSH) "$(REGISTRY)/$(PROJECT)/clonerefs:$(CLONEREFS_VERSION)"
+
+
+sidecar-image: alpine-image
+	CGO_ENABLED=0 go build -o cmd/sidecar/sidecar k8s.io/test-infra/prow/cmd/sidecar
+	docker build -t "$(REGISTRY)/$(PROJECT)/sidecar:$(SIDECAR_VERSION)" $(DOCKER_LABELS) cmd/sidecar
+	$(PUSH) "$(REGISTRY)/$(PROJECT)/sidecar:$(SIDECAR_VERSION)"
 
