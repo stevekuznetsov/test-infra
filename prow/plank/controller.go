@@ -77,6 +77,8 @@ type Controller struct {
 	totURL string
 	// selector that will be applied on prowjobs and pods.
 	selector string
+	// whether or not we decorate podspecs
+	decorate bool
 
 	lock sync.RWMutex
 	// pendingJobs is a short-lived cache that helps in limiting
@@ -89,7 +91,7 @@ type Controller struct {
 }
 
 // NewController creates a new Controller from the provided clients.
-func NewController(kc, pkc *kube.Client, ghc *github.Client, logger *logrus.Entry, ca *config.Agent, totURL, selector string) (*Controller, error) {
+func NewController(kc, pkc *kube.Client, ghc *github.Client, logger *logrus.Entry, ca *config.Agent, totURL, selector string, decorate bool) (*Controller, error) {
 	n, err := snowflake.NewNode(1)
 	if err != nil {
 		return nil, err
@@ -107,6 +109,7 @@ func NewController(kc, pkc *kube.Client, ghc *github.Client, logger *logrus.Entr
 		pendingJobs: make(map[string]int),
 		totURL:      totURL,
 		selector:    selector,
+		decorate:    decorate,
 	}, nil
 }
 
@@ -450,8 +453,15 @@ func (c *Controller) startPod(pj kube.ProwJob) (string, string, error) {
 		return "", "", fmt.Errorf("error getting build ID: %v", err)
 	}
 
-	pod, err := pjutil.ProwJobToPod(pj, buildID)
-	if err != nil {
+	var pod *kube.Pod
+	var creationErr error
+	if c.decorate {
+		config := c.ca.Config().Plank
+		pod, creationErr = pjutil.ProwJobToDecoratedPod(pj, buildID, config.CloneRefsImage, config.InitUploadImage, config.EntrypointImage, config.SidecarImage, config.GcsConfig)
+	} else {
+		pod, creationErr = pjutil.ProwJobToPod(pj, buildID)
+	}
+	if creationErr != nil {
 		return "", "", err
 	}
 

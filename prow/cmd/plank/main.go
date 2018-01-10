@@ -46,6 +46,7 @@ var (
 	cluster      = flag.String("cluster", "", "Path to kube.Cluster YAML file. If empty, uses the local cluster.")
 	buildCluster = flag.String("build-cluster", "", "Path to file containing a YAML-marshalled kube.Cluster object. If empty, uses the local cluster.")
 	selector     = flag.String("label-selector", kube.EmptySelector, "Label selector to be applied in prowjobs. See https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors for constructing a label selector.")
+	decorate     = flag.Bool("decorate-podspec", false, "Whether to decorate PodSpecs [EXPERIMENTAL].")
 
 	githubEndpoint  = flag.String("github-endpoint", "https://api.github.com", "GitHub's API endpoint.")
 	githubTokenFile = flag.String("github-token-file", "/etc/github/oauth", "Path to the file containing the GitHub OAuth token.")
@@ -111,7 +112,7 @@ func main() {
 		}
 	}
 
-	c, err := plank.NewController(kc, pkc, ghc, logger, configAgent, *totURL, *selector)
+	c, err := plank.NewController(kc, pkc, ghc, logger, configAgent, *totURL, *selector, *decorate)
 	if err != nil {
 		logger.WithError(err).Fatal("Error creating plank controller.")
 	}

@@ -19,10 +19,13 @@ package pjutil
 
 import (
 	"fmt"
+	"path"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
+
+	"encoding/json"
 
 	"k8s.io/test-infra/prow/config"
 	"k8s.io/test-infra/prow/github"
@@ -120,6 +123,186 @@ func BatchSpec(p config.Presubmit, refs kube.Refs) kube.ProwJobSpec {
 	return pjs
 }
 
+const (
+	toolsVolumeName = "tools"
+	toolsMountPath  = "/var/run/tools"
+
+	loggingVolumeName = "logging"
+	loggingMountPath  = "/var/run/logging"
+
+	gcsCredentialsVolumeName = "gcs-credentials"
+	gcsCredentialsMountPath  = "/var/run/secrets/gce"
+
+	artifactsVolumeName = "artifacts"
+	artifactsMountPath  = "/var/run/artifacts"
+	artifactsEnvVarName = "GCS_ARTIFACTS_DIR"
+
+	sourceVolumeName = "source"
+	soureceMountPath = "/go"
+)
+
+var (
+	processLog     = path.Join(loggingMountPath, "process.log")
+	markerFile     = path.Join(loggingMountPath, "process.marker")
+	gcsCredentials = path.Join(gcsCredentialsMountPath, "gcs.json")
+	cloneLog       = path.Join(artifactsMountPath, "clone.json")
+)
+
+// ProwJobToDecoratedPod converts a ProwJob to a Pod that will run the tests
+// and decorates it with pod utilities.
+func ProwJobToDecoratedPod(pj kube.ProwJob, buildID, cloneRefsImage, initUploadImage, entrypointImage, sidecarImage string, gcsConfig *config.GoogleCloudStorage) (*kube.Pod, error) {
+	prowJob, err := deepCopy(pj)
+	if err != nil {
+		return nil, err
+	}
+
+	// toolsVolumeMount contains the entrypoint tooling
+	toolsVolumeMount := kube.VolumeMount{
+		Name:      toolsVolumeName,
+		MountPath: toolsMountPath,
+	}
+
+	// loggingVolumeMount contains logging files
+	loggingVolumeMount := kube.VolumeMount{
+		Name:      loggingVolumeName,
+		MountPath: loggingMountPath,
+	}
+
+	// artifactsVolumeMount shares the artifacts between the test and upload containers
+	artifactsVolumeMount := kube.VolumeMount{
+		Name:      artifactsVolumeName,
+		MountPath: artifactsMountPath,
+	}
+
+	// sourceVolumeMount shares the cloned source between the clone-refs and test containers
+	sourceVolumeMount := kube.VolumeMount{
+		Name:      sourceVolumeName,
+		MountPath: soureceMountPath,
+	}
+
+	// gcsCredentialsVolumeMount holds GCS credentials for containers that upload data
+	gcsCredentialsVolumeMount := kube.VolumeMount{
+		Name:      gcsCredentialsVolumeName,
+		ReadOnly:  true,
+		MountPath: gcsCredentialsMountPath,
+	}
+
+	prowJob.Spec.PodSpec.InitContainers = []kube.Container{
+		{ // the `clone-refs` init-container clones the necessary repos
+			Name:    "clone-refs",
+			Image:   cloneRefsImage,
+			Command: []string{"/clonerefs"},
+			Args: []string{
+				fmt.Sprintf("-src-root=%s", soureceMountPath),
+				fmt.Sprintf("-clone-log=%s", cloneLog),
+			},
+			VolumeMounts: []kube.VolumeMount{artifactsVolumeMount, sourceVolumeMount},
+		},
+		{ // the `init-upload` init-container creates started.json and uploads to GCS
+			Name:    "init-upload",
+			Image:   initUploadImage,
+			Command: []string{"/initupload"},
+			Args: append(flagsForGcsConfig(gcsConfig),
+				fmt.Sprintf("-clone-log=%s", cloneLog),
+			),
+			VolumeMounts: []kube.VolumeMount{artifactsVolumeMount, gcsCredentialsVolumeMount},
+		},
+		{ // the `place-tooling` init-container adds the entrypoint to the shared volume
+			Name:         "place-tooling",
+			Image:        entrypointImage,
+			Command:      []string{"/usr/bin/cp"},
+			Args:         []string{"/entrypoint", toolsMountPath},
+			VolumeMounts: []kube.VolumeMount{toolsVolumeMount},
+		},
+	}
+
+	// amend the test container to add our volumes, wrap the entrypoint and communicate artifact dir
+	testEntrypoint := append(pj.Spec.PodSpec.Containers[0].Command, pj.Spec.PodSpec.Containers[0].Args...)
+	prowJob.Spec.PodSpec.Containers[0].Name = "test"
+	prowJob.Spec.PodSpec.Containers[0].VolumeMounts = append(prowJob.Spec.PodSpec.Containers[0].VolumeMounts, toolsVolumeMount, loggingVolumeMount, artifactsVolumeMount, sourceVolumeMount)
+	prowJob.Spec.PodSpec.Containers[0].Command = []string{path.Join(toolsMountPath, "entrypoint")}
+	prowJob.Spec.PodSpec.Containers[0].Args = append([]string{
+		fmt.Sprintf("-process-log=%s", processLog),
+		fmt.Sprintf("-marker-file=%s", markerFile),
+		"--",
+	}, testEntrypoint...)
+	prowJob.Spec.PodSpec.Containers[0].Env = append(prowJob.Spec.PodSpec.Containers[0].Env, kube.EnvVar{Name: artifactsEnvVarName, Value: artifactsMountPath})
+
+	// add the logging sidecar container
+	prowJob.Spec.PodSpec.Containers = append(prowJob.Spec.PodSpec.Containers, kube.Container{
+		Name:    "sidecar",
+		Image:   sidecarImage,
+		Command: []string{"/sidecar"},
+		Args: append(flagsForGcsConfig(gcsConfig),
+			fmt.Sprintf("-process-log=%s", processLog),
+			fmt.Sprintf("-marker-file=%s", markerFile),
+			fmt.Sprintf("-artifact-dir=%s", artifactsMountPath),
+			fmt.Sprintf("-gcs-credentials-file=%s", gcsCredentials),
+		),
+		VolumeMounts: []kube.VolumeMount{loggingVolumeMount, artifactsVolumeMount, gcsCredentialsVolumeMount},
+	})
+
+	// add the volumes we need to the pod
+	prowJob.Spec.PodSpec.Volumes = append(prowJob.Spec.PodSpec.Volumes,
+		kube.Volume{
+			Name: toolsVolumeName,
+			VolumeSource: kube.VolumeSource{
+				EmptyDir: &kube.EmptyDirVolumeSource{},
+			},
+		},
+		kube.Volume{
+			Name: loggingVolumeName,
+			VolumeSource: kube.VolumeSource{
+				EmptyDir: &kube.EmptyDirVolumeSource{},
+			},
+		},
+		kube.Volume{
+			Name: artifactsVolumeName,
+			VolumeSource: kube.VolumeSource{
+				EmptyDir: &kube.EmptyDirVolumeSource{},
+			},
+		},
+		kube.Volume{
+			Name: sourceVolumeName,
+			VolumeSource: kube.VolumeSource{
+				EmptyDir: &kube.EmptyDirVolumeSource{},
+			},
+		},
+		kube.Volume{
+			Name: gcsCredentialsVolumeName,
+			VolumeSource: kube.VolumeSource{
+				Secret: &kube.SecretSource{
+					Name: gcsConfig.CredentialsSecretName,
+				},
+			},
+		},
+	)
+
+	return ProwJobToPod(prowJob, buildID)
+}
+
+func flagsForGcsConfig(gcsConfig *config.GoogleCloudStorage) []string {
+	if gcsConfig == nil || gcsConfig.Bucket == "" {
+		return []string{"-dry-run=true"}
+	}
+
+	flags := []string{
+		fmt.Sprintf("-gcs-bucket=%s", gcsConfig.Bucket),
+		"-dry-run=false",
+	}
+	if gcsConfig.PathStrategy != "" {
+		flags = append(flags, fmt.Sprintf("-path-strategy=%s", gcsConfig.PathStrategy))
+	}
+	if gcsConfig.DefaultOrg != "" {
+		flags = append(flags, fmt.Sprintf("-default-org=%s", gcsConfig.DefaultOrg))
+	}
+	if gcsConfig.DefaultRepo != "" {
+		flags = append(flags, fmt.Sprintf("-default-repo=%s", gcsConfig.DefaultRepo))
+	}
+
+	return flags
+}
+
 // ProwJobToPod converts a ProwJob to a Pod that will run the tests.
 func ProwJobToPod(pj kube.ProwJob, buildID string) (*kube.Pod, error) {
 	env, err := EnvForSpec(NewJobSpec(pj.Spec, buildID))
@@ -127,34 +310,47 @@ func ProwJobToPod(pj kube.ProwJob, buildID string) (*kube.Pod, error) {
 		return nil, err
 	}
 
-	spec := pj.Spec.PodSpec
-	spec.RestartPolicy = "Never"
+	prowJob, err := deepCopy(pj)
+	if err != nil {
+		return nil, err
+	}
 
-	// Set environment variables in each container in the pod spec. We don't
-	// want to update the spec in place, since that will update the ProwJob
-	// spec. Instead, create a copy.
-	spec.Containers = []kube.Container{}
-	for i := range pj.Spec.PodSpec.Containers {
-		spec.Containers = append(spec.Containers, pj.Spec.PodSpec.Containers[i])
-		spec.Containers[i].Name = fmt.Sprintf("%s-%d", pj.Metadata.Name, i)
-		spec.Containers[i].Env = append(spec.Containers[i].Env, kubeEnv(env)...)
+	prowJob.Spec.PodSpec.RestartPolicy = "Never"
+	for i := range prowJob.Spec.PodSpec.InitContainers {
+		prowJob.Spec.PodSpec.InitContainers[i].Env = append(prowJob.Spec.PodSpec.InitContainers[i].Env, kubeEnv(env)...)
 	}
-	podLabels := make(map[string]string)
-	for k, v := range pj.Metadata.Labels {
-		podLabels[k] = v
+	for i := range prowJob.Spec.PodSpec.Containers {
+		prowJob.Spec.PodSpec.Containers[i].Env = append(prowJob.Spec.PodSpec.Containers[i].Env, kubeEnv(env)...)
 	}
-	podLabels[kube.CreatedByProw] = "true"
-	podLabels[kube.ProwJobTypeLabel] = string(pj.Spec.Type)
+	if prowJob.Metadata.Labels == nil {
+		prowJob.Metadata.Labels = make(map[string]string)
+	}
+	prowJob.Metadata.Labels[kube.CreatedByProw] = "true"
+	prowJob.Metadata.Labels[kube.ProwJobTypeLabel] = string(prowJob.Spec.Type)
 	return &kube.Pod{
 		Metadata: kube.ObjectMeta{
-			Name:   pj.Metadata.Name,
-			Labels: podLabels,
+			Name:   prowJob.Metadata.Name,
+			Labels: prowJob.Metadata.Labels,
 			Annotations: map[string]string{
-				kube.ProwJobAnnotation: pj.Spec.Job,
+				kube.ProwJobAnnotation: prowJob.Spec.Job,
 			},
 		},
-		Spec: spec,
+		Spec: prowJob.Spec.PodSpec,
 	}, nil
+}
+
+func deepCopy(pj kube.ProwJob) (kube.ProwJob, error) {
+	var prowJob kube.ProwJob
+	data, err := json.Marshal(pj)
+	if err != nil {
+		return prowJob, err
+	}
+
+	if err := json.Unmarshal(data, &prowJob); err != nil {
+		return prowJob, err
+	}
+
+	return prowJob, nil
 }
 
 // kubeEnv transforms a mapping of environment variables

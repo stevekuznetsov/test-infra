@@ -116,6 +116,33 @@ type Controller struct {
 	// AllowCancellations enables aborting presubmit jobs for commits that
 	// have been superseded by newer commits in Github pull requests.
 	AllowCancellations bool `json:"allow_cancellations"`
+
+	// The following fields declare which images to use for sourcing the
+	// pod utilities that decorate user-provided PodSpecs
+	CloneRefsImage  string `json:"clone_refs_image,omitempty"`
+	InitUploadImage string `json:"init_upload_image,omitempty"`
+	EntrypointImage string `json:"entrypoint_image,omitempty"`
+	SidecarImage    string `json:"sidecar_image,omitempty"`
+
+	// The following fields configure how we upload artifacts to GCS
+	GcsConfig *GoogleCloudStorage `json:"gcs_config,omitempty"`
+}
+
+type GoogleCloudStorage struct {
+	// CredentialsSecretName is the secret containing the GCE credentials
+	// JSON file for pushing artifacts into GCS
+	CredentialsSecretName string `json:"credentials_secret_name,omitempty"`
+	// Bucket is the bucket to which we will upload artifacts
+	Bucket string `json:"bucket,omitempty"`
+	// PathStrategy defines how we compute job artifact paths in GCS.
+	// One of "legacy", "explicit", or "single"
+	PathStrategy string `json:"path_strategy,omitempty"`
+	// DefaultOrg is the default repo for the "legacy" and "single"
+	// upload strategies
+	DefaultOrg string `json:"default_org,omitempty"`
+	// DefaultRepo is the default repo for the "legacy" and "single"
+	// upload strategies
+	DefaultRepo string `json:"default_repo,omitempty"`
 }
 
 // Plank is config for the plank controller.
