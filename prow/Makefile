@@ -39,6 +39,10 @@ JENKINS-OPERATOR_VERSION ?= 0.61
 TIDE_VERSION             ?= 0.18
 # CLONEREFS_VERSION is the version of the clonerefs image
 CLONEREFS_VERSION        ?=0.1
+# INITUPLOAD_VERSION is the version of the initupload image
+INITUPLOAD_VERSION       ?=0.1
+# ENTRYPOINT_VERSION is the version of the entrypoint image
+ENTRYPOINT_VERSION       ?=0.1
 # SIDECAR_VERSION is the version of the sidecar image
 SIDECAR_VERSION          ?=0.1
 
@@ -169,7 +173,7 @@ tide-deployment: get-cluster-credentials
 mem-range-deployment: get-build-cluster-credentials
 	kubectl apply -f cluster/mem_limit_range.yaml
 
-.PHONY: hook-image hook-deployment hook-service sinker-image sinker-deployment deck-image deck-deployment deck-service splice-image splice-deployment tot-image tot-service tot-deployment horologium-image horologium-deployment plank-image plank-deployment jenkins-operator-image jenkins-operator-deployment tide-image tide-deployment mem-range-deployment
+pod-utils-images: clonerefs-image initupload-image entrypoint-image sidecar-image
 
 clonerefs-image: git-image
 	CGO_ENABLED=0 go build -o cmd/clonerefs/clonerefs k8s.io/test-infra/prow/cmd/clonerefs
@@ -181,8 +185,14 @@ initupload-image: alpine-image
 	docker build -t "$(REGISTRY)/$(PROJECT)/initupload:$(INITUPLOAD_VERSION)" $(DOCKER_LABELS) cmd/initupload
 	$(PUSH) "$(REGISTRY)/$(PROJECT)/initupload:$(INITUPLOAD_VERSION)"
 
+entrypoint-image: alpine-image
+	CGO_ENABLED=0 go build -o cmd/entrypoint/entrypoint k8s.io/test-infra/prow/cmd/entrypoint
+	docker build -t "$(REGISTRY)/$(PROJECT)/entrypoint:$(ENTRYPOINT_VERSION)" $(DOCKER_LABELS) cmd/entrypoint
+	$(PUSH) "$(REGISTRY)/$(PROJECT)/entrypoint:$(ENTRYPOINT_VERSION)"
+
 sidecar-image: alpine-image
 	CGO_ENABLED=0 go build -o cmd/sidecar/sidecar k8s.io/test-infra/prow/cmd/sidecar
 	docker build -t "$(REGISTRY)/$(PROJECT)/sidecar:$(SIDECAR_VERSION)" $(DOCKER_LABELS) cmd/sidecar
 	$(PUSH) "$(REGISTRY)/$(PROJECT)/sidecar:$(SIDECAR_VERSION)"
 
+.PHONY: hook-image hook-deployment hook-service sinker-image sinker-deployment deck-image deck-deployment deck-service splice-image splice-deployment tot-image tot-service tot-deployment horologium-image horologium-deployment plank-image plank-deployment jenkins-operator-image jenkins-operator-deployment tide-image tide-deployment mem-range-deployment clonerefs-image initupload-image entrypoint-image sidecar-image pod-utils-images

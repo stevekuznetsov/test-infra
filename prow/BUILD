@@ -20,6 +20,7 @@ filegroup(
         "//prow/cmd/clonerefs:all-srcs",
         "//prow/cmd/config:all-srcs",
         "//prow/cmd/deck:all-srcs",
+        "//prow/cmd/entrypoint:all-srcs",
         "//prow/cmd/hook:all-srcs",
         "//prow/cmd/horologium:all-srcs",
         "//prow/cmd/initupload:all-srcs",

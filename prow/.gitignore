@@ -13,3 +13,4 @@ cmd/tide/tide
 cmd/clonerefs/clonerefs
 cmd/sidecar/sidecar
 cmd/initupload/initupload
+cmd/entrypoint/entrypoint
