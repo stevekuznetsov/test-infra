@@ -1,0 +1,36 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+
+proto_library(
+    name = "messages_proto",
+    srcs = ["messages.proto"],
+    visibility = ["//visibility:public"],
+)
+
+go_proto_library(
+    name = "messages_go_proto",
+    importpath = "google.golang.org/grpc/grpclb/grpc_lb_v1/messages",
+    proto = ":messages_proto",
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "go_default_library",
+    embed = [":messages_go_proto"],
+    importpath = "google.golang.org/grpc/grpclb/grpc_lb_v1/messages",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
