@@ -18,9 +18,7 @@ limitations under the License.
 package pjutil
 
 import (
-	"fmt"
-
-	uuid "github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -146,26 +144,8 @@ func ProwJobToPod(pj kube.ProwJob, buildID string) (*v1.Pod, error) {
 
 	spec := pj.Spec.PodSpec
 	spec.RestartPolicy = "Never"
-
-	// Set environment variables in each container in the pod spec. We don't
-	// want to update the spec in place, since that will update the ProwJob
-	// spec. Instead, create a copy.
-	spec.InitContainers = []v1.Container{}
-	for i := range pj.Spec.PodSpec.InitContainers {
-		spec.InitContainers = append(spec.InitContainers, pj.Spec.PodSpec.InitContainers[i])
-		if spec.InitContainers[i].Name == "" {
-			spec.InitContainers[i].Name = fmt.Sprintf("%s-%d", pj.ObjectMeta.Name, i)
-		}
-		spec.InitContainers[i].Env = append(spec.InitContainers[i].Env, kubeEnv(env)...)
-	}
-	spec.Containers = []v1.Container{}
-	for i := range pj.Spec.PodSpec.Containers {
-		spec.Containers = append(spec.Containers, pj.Spec.PodSpec.Containers[i])
-		if spec.Containers[i].Name == "" {
-			spec.Containers[i].Name = fmt.Sprintf("%s-%d", pj.ObjectMeta.Name, i)
-		}
-		spec.Containers[i].Env = append(spec.Containers[i].Env, kubeEnv(env)...)
-	}
+	spec.Containers[0].Name = "test"
+	spec.Containers[0].Env = append(spec.Containers[0].Env, kubeEnv(env)...)
 	podLabels := make(map[string]string)
 	for k, v := range pj.ObjectMeta.Labels {
 		podLabels[k] = v

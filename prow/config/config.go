@@ -28,7 +28,8 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
-	cron "gopkg.in/robfig/cron.v2"
+	"gopkg.in/robfig/cron.v2"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"k8s.io/test-infra/prow/kube"
@@ -490,7 +491,17 @@ func validateBasicConfig(config BasicConfig, presets []Preset) error {
 		}
 	}
 
-	return nil
+	return validatePodSpec(config.Name, config.Spec)
+}
+
+func validatePodSpec(name string, spec *v1.PodSpec) error {
+	if len(spec.InitContainers) != 0 {
+		return fmt.Errorf("job %s provides init containers", name)
+	}
+
+	if len(spec.Containers) != 1 {
+		return fmt.Errorf("job %s provides more than one test container", name)
+	}
 }
 
 // ValidateController validates the provided controller config.
