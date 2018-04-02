@@ -139,7 +139,7 @@ window.onload = () => {
     }, () => {
         loadProgress(false);
         const mainContainer = document.querySelector("#main-container");
-            mainContainer.appendChild(createMessage("Something wrongs! We could not fulfill your request"));
+            mainContainer.appendChild(createMessage("We could not fulfill your request."));
     });
     loadProgress(true);
     request.send("query=" + onLoadQuery());
@@ -298,29 +298,29 @@ function createTidePoolLabel(pr, tidePool) {
  * requirements, it will show that the PR needs to resolve labels.
  * @param isMerge {boolean}
  * @param jobStatus {string}
- * @param mergeAbility {number}
+ * @param mergeStatus {string}
  * @return {Element}
  */
-function createTitleLabel(isMerge, jobStatus, mergeAbility) {
+function createTitleLabel(isMerge, jobStatus, mergeStatus) {
     const label = document.createElement("SPAN");
     label.classList.add("title-label", "mdl-shadow--2dp");
     if (isMerge) {
         label.textContent = "Merged";
         label.classList.add("merging");
-    } else if (mergeAbility === -1) {
-        label.textContent = "Unknown Merge Requirements";
-        label.classList.add("unknown");
-    } else if (mergeAbility === 0) {
-        label.textContent = "Needs to Resolve Labels";
-        label.classList.add("pending");
+    } else if (mergeStatus !== "") {
+        if (mergeStatus === "unknown") {
+            label.textContent = "Unknown Merge Requirements";
+        } else {
+            label.textContent = "Action Required";
+        }
+        label.classList.add(mergeStatus);
     } else {
         if (jobStatus === "succeeded") {
-            label.textContent = "Good to be merged";
-            label.classList.add(jobStatus);
+            label.textContent = "No Action Required";
         } else {
             label.textContent = "Jobs " + jobStatus;
-            label.classList.add(jobStatus);
         }
+        label.classList.add(jobStatus);
     }
 
     return label;
@@ -331,10 +331,10 @@ function createTitleLabel(isMerge, jobStatus, mergeAbility) {
  * @param {Object} pr
  * @param {Array<Object>} tidePools
  * @param {string} jobStatus
- * @param {number} mergeAbility
+ * @param {string} mergeStatus
  * @return {Element}
  */
-function createPRCardTitle(pr, tidePools, jobStatus, mergeAbility) {
+function createPRCardTitle(pr, tidePools, jobStatus, mergeStatus) {
     const prTitle = document.createElement("DIV");
     prTitle.classList.add("mdl-card__title");
 
@@ -364,7 +364,7 @@ function createPRCardTitle(pr, tidePools, jobStatus, mergeAbility) {
     });
     let tidePoolLabel = createTidePoolLabel(pr, pool[0]);
     if (!tidePoolLabel) {
-        tidePoolLabel = createTitleLabel(pr.Merged, jobStatus, mergeAbility);
+        tidePoolLabel = createTitleLabel(pr.Merged, jobStatus, mergeStatus);
     }
     prTitle.appendChild(tidePoolLabel);
 
@@ -452,7 +452,7 @@ function createJobStatus(builds) {
     if (state === "unknown") {
         arrowIcon.classList.add("hidden");
         const p = document.createElement("P");
-        p.textContent = "Test results for this PR are not in our record but you can always find them on PR's Github page. Sorry for any convenience!";
+        p.textContent = "Test results for this PR are not in our record but you can always find them on PR's Github page.";
 
         status.appendChild(document.createTextNode(statusText));
         status.appendChild(createStatusHelp("No test found", [p]));
@@ -571,7 +571,7 @@ function createQueriesTable(prLabels, queries) {
 
         const mergeIcon = document.createElement("TD");
         mergeIcon.classList.add("merge-table-icon");
-        const iconButton = createIcon("information", "Clicks to see query details", [], true);
+        const iconButton = createIcon("information", "Click to see query details", [], true);
         mergeIcon.appendChild(iconButton);
         row.appendChild(mergeIcon);
 
@@ -601,7 +601,7 @@ function createQueriesTable(prLabels, queries) {
 }
 
 /**
- * Creates the merge requirement status.b
+ * Creates the merge requirement status.
  * @param prLabels
  * @param queries
  * @return {Element}
@@ -611,28 +611,29 @@ function createMergeStatus(prLabels, queries) {
     const statusContainer = document.createElement("DIV");
     statusContainer.classList.add("status-container");
     const status = document.createElement("DIV");
-    const mergeAbility = isAbleToMerge(queries);
-    if (mergeAbility === 0) {
-        status.appendChild(createIcon("error", "", ["status-icon", "failed"]));
-        status.appendChild(document.createTextNode("Does not meet merge requirements"));
-        // Creates help button
-        const iconButton = createIcon("help", "", ["help-icon-button"], true);
-        status.appendChild(iconButton);
-        // Shows dialog
-        const dialog = document.querySelector("#merge-help-dialog");
-        iconButton.addEventListener("click", (event) => {
-            dialog.showModal();
-            event.stopPropagation();
-        });
-    } else if (mergeAbility === 1) {
-        status.appendChild(createIcon("check_circle", "", ["status-icon", "succeeded"]));
-        status.appendChild(document.createTextNode("Meets merge requirements"));
-    } else {
+    if (queries.length === 0) {
         status.appendChild(document.createTextNode("No Tide query found"));
         status.classList.add("no-status");
         const p = document.createElement("P");
-        p.textContent = "This repo may not be configured to use Tide.";
+        p.textContent = "This repo is not be configured to use Tide.";
         status.appendChild(createStatusHelp("Tide query not found", [p]));
+    } else {
+        if (queries[0].diffCount === 0) {
+            status.appendChild(createIcon("check_circle", "", ["status-icon", "succeeded"]));
+            status.appendChild(document.createTextNode("Meets merge requirements"));
+        } else {
+            status.appendChild(createIcon("error", "", ["status-icon", "failed"]));
+            status.appendChild(document.createTextNode("Does not meet merge requirements"));
+            // Creates help button
+            const iconButton = createIcon("help", "", ["help-icon-button"], true);
+            status.appendChild(iconButton);
+            // Shows dialog
+            const dialog = document.querySelector("#merge-help-dialog");
+            iconButton.addEventListener("click", (event) => {
+                dialog.showModal();
+                event.stopPropagation();
+            });
+        }
     }
     const arrowIcon= createIcon("expand_less");
     arrowIcon.classList.add("arrow-icon");
@@ -696,6 +697,7 @@ function createPRCardBody(pr, builds, queries) {
 
     cardBody.classList.add("mdl-card__supporting-text");
     cardBody.appendChild(title);
+
     cardBody.appendChild(createJobStatus(builds));
     const nodes = pr.Labels && pr.Labels.Nodes ? pr.Labels.Nodes : [];
     cardBody.appendChild(createMergeStatus(nodes, queries));
@@ -744,9 +746,10 @@ function createPRCard(pr, builds = [], queries = [], tidePools = []) {
     }
     const processedQuery = [];
     queries.forEach(query => {
-        let score = 0.0;
+        let diffCount = 0.0;
         const labels = [];
         const missingLabels = [];
+        let excludedBaseRef = false;
         query.labels.sort((a, b) => {
             if (a.length === b.length) {
                 return 0;
@@ -761,26 +764,35 @@ function createPRCard(pr, builds = [], queries = [], tidePools = []) {
         });
         query.labels.forEach(label => {
             labels.push({name: label, own: prLabelsSet.has(label)});
-            score += labels[labels.length - 1].own ? 1 : 0;
+            diffCount += labels[labels.length - 1].own ? 0 : 1;
         });
         query.missingLabels.forEach(label => {
             missingLabels.push({name: label, own: prLabelsSet.has(label)});
-            score += missingLabels[missingLabels.length - 1].own ? 0 : 1;
+            diffCount += missingLabels[missingLabels.length - 1].own ? 1 : 0;
         });
-        score = (labels.length + missingLabels.length > 0) ? score
-            / (labels.length + missingLabels.length) : 1.0;
-        processedQuery.push(
-            {score: score, labels: labels, missingLabels: missingLabels});
+        query.excludedBranches.forEach(branch => {
+            if (pr.BaseRef.Name === branch) {
+                excludedBaseRef = true;
+                diffCount += 1;
+            }
+        });
+        processedQuery.push({
+            diffCount: diffCount,
+            labels: labels,
+            missingLabels: missingLabels,
+            excludedBaseRef: excludedBaseRef,
+        });
     });
-    // Sort queries by descending score order.
+    // Sort queries by ascending diffCount order, the query with the smallest
+    // amount of diffs is that which will be used to assess mergeability
     processedQuery.sort((q1, q2) => {
-        if (Math.abs(q1.score - q2.score) < Number.EPSILON) {
+        if (Math.abs(q1.diffCount - q2.diffCount) < Number.EPSILON) {
             return 0;
         }
-        return q1.score > q2.score ? -1 : 1;
+        return q1.diffCount < q2.diffCount ? -1 : 1;
     });
     prCard.classList.add("pr-card", "mdl-card");
-    prCard.appendChild(createPRCardTitle(pr, tidePools, jobStatus(builds), isAbleToMerge(processedQuery)));
+    prCard.appendChild(createPRCardTitle(pr, tidePools, jobStatus(builds), mergeStatus(processedQuery)));
     prCard.appendChild(createPRCardBody(pr, builds, processedQuery));
     return prCard;
 }
@@ -827,17 +839,20 @@ function jobStatus(builds) {
 }
 
 /**
- * Returns -1 if there is no query. 1 if the PR is able to be merged by checking
- * the score of the first query in the query list (score === 1), the list has
- * been sorted by scores, otherwise 0.
+ * Returns the merge status based on query diffs.
  * @param queries
- * @return {number}
+ * @return {string}
  */
-function isAbleToMerge(queries) {
+function mergeStatus(queries) {
     if (queries.length === 0) {
-        return -1;
+        return "unknown";
     }
-    return Math.abs(queries[0].score - 1.0) < Number.EPSILON ? 1 : 0;
+    let diff = queries[0].diffCount;
+    if (diff === 0) {
+        return "succeeded";
+    } else if (diff > 0.0) {
+        return "pending";
+    }
 }
 
 /**
@@ -887,12 +902,12 @@ function createMessage(msg, icStr) {
     return msgContainer;
 }
 
-document.addEventListener("DOMContentLoaded", function(event) {
+document.addEventListener("DOMContentLoaded", function() {
    configure();
 });
 
 function configure() {
-    if(typeof branding === undefined){
+    if(typeof branding === "undefined"){
         return;
     }
     if (branding.logo !== '') {

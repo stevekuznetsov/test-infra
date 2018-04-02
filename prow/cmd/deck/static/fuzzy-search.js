@@ -35,26 +35,26 @@ limitations under the License.
     };
 
     /**
-     * Sorts dict function. The higher the score, the lower index the string is. If two
-     * strings have the same score, sort by alphabetical order.
+     * Sorts dict function. The higher the diffCount, the lower index the string is. If two
+     * strings have the same diffCount, sort by alphabetical order.
      * @param {string} a
      * @param {string} b
      * @return {number}
      */
     this.sortFn = function(a, b) {
-      if (a.score === b.score) {
+      if (a.diffCount === b.diffCount) {
         return a.str < b.str ? -1 : (a.str > b.str ? 1 : 0);
       }
-      return a.score > b.score ? -1 : 1;
+      return a.diffCount > b.diffCount ? -1 : 1;
     };
 
     /**
-     * Calculates the score that a matching can get. The string is calculated based on 4
+     * Calculates the diffCount that a matching can get. The string is calculated based on 4
      * criteria:
-     *  1. +3 score for the matching that occurs near the beginning of the string.
-     *  2. +5 score for the matching that is not an alphabetical character.
-     *  3. +3 score for the matching that the string character is upper case.
-     *  4. +10 score for the matching that matches the uppercase which is just before a
+     *  1. +3 diffCount for the matching that occurs near the beginning of the string.
+     *  2. +5 diffCount for the matching that is not an alphabetical character.
+     *  3. +3 diffCount for the matching that the string character is upper case.
+     *  4. +10 diffCount for the matching that matches the uppercase which is just before a
      *  separator.
      * @param {number} i
      * @param {string} str
@@ -88,7 +88,7 @@ limitations under the License.
     };
 
     /**
-     * Get maximum score that a string can get against the pattern.
+     * Get maximum diffCount that a string can get against the pattern.
      * @param {string} pttn
      * @param {string} str
      * @return {number}
@@ -158,7 +158,7 @@ limitations under the License.
 
     var result = [];
     for (i = 0; i < dictScr.length; i++) {
-      if (dictScr[i].score === 0) continue;
+      if (dictScr[i].diffCount === 0) continue;
       result.push(dictScr[i].str);
     }
     return result;
