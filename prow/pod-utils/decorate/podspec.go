@@ -37,8 +37,10 @@ import (
 const (
 	LogMountName            = "logs"
 	LogMountPath            = "/logs"
+	ArtifactsEnv            = "ARTIFACTS"
+	ArtifactsPath           = LogMountPath + "/artifacts"
 	CodeMountName           = "code"
-	CodeMountPath           = "/go"
+	CodeMountPath           = "/home/prow/go"
 	ToolsMountName          = "tools"
 	ToolsMountPath          = "/tools"
 	GcsCredentialsMountName = "gcs-credentials"
@@ -67,6 +69,7 @@ func ProwJobToPod(pj kube.ProwJob, buildID string) (*v1.Pod, error) {
 	if err != nil {
 		return nil, err
 	}
+	rawEnv[ArtifactsEnv] = ArtifactsPath
 	env := kubeEnv(rawEnv)
 
 	spec := pj.Spec.PodSpec.DeepCopy()
