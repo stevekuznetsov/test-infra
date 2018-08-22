@@ -78,7 +78,7 @@ type result struct {
 // Server implements http.Handler. It validates incoming GitHub webhooks and
 // then dispatches them to the appropriate plugins.
 type Server struct {
-	hmacSecret []byte
+	hmacSecret func() []byte
 
 	gc  *git.Client
 	ghc githubClient
@@ -88,7 +88,7 @@ type Server struct {
 }
 
 // NewServer returns new server
-func NewServer(hmac []byte, gc *git.Client, ghc *github.Client, configAgent *Agent) *Server {
+func NewServer(hmac func() []byte, gc *git.Client, ghc *github.Client, configAgent *Agent) *Server {
 	return &Server{
 		hmacSecret: hmac,
 
@@ -102,7 +102,7 @@ func NewServer(hmac []byte, gc *git.Client, ghc *github.Client, configAgent *Age
 
 // ServeHTTP validates an incoming webhook and puts it into the event channel.
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	eventType, eventGUID, payload, ok := hook.ValidateWebhook(w, r, s.hmacSecret)
+	eventType, eventGUID, payload, ok := hook.ValidateWebhook(w, r, s.hmacSecret())
 	if !ok {
 		s.log.Error("Failed to validate payload")
 		return

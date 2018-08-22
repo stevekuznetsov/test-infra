@@ -19,9 +19,7 @@ limitations under the License.
 package main
 
 import (
-	"bytes"
 	"flag"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os/signal"
@@ -29,6 +27,7 @@ import (
 	"syscall"
 
 	"github.com/sirupsen/logrus"
+	"k8s.io/test-infra/prow/config"
 
 	"k8s.io/test-infra/prow/git"
 	"k8s.io/test-infra/prow/github"
@@ -56,26 +55,18 @@ func main() {
 		logrus.WithError(err).Fatal("Error starting config agent.")
 	}
 
-	webhookSecretRaw, err := ioutil.ReadFile(*webhookSecretFile)
-	if err != nil {
-		logrus.WithError(err).Fatal("Could not read webhook secret file.")
+	secretAgent := &config.SecretAgent{}
+	if err := secretAgent.Start([]string{*webhookSecretFile, *githubTokenFile}); err != nil {
+		logrus.WithError(err).Fatal("Error starting secrets agent.")
 	}
-	webhookSecret := bytes.TrimSpace(webhookSecretRaw)
 
-	oauthSecretRaw, err := ioutil.ReadFile(*githubTokenFile)
-	if err != nil {
-		logrus.WithError(err).Fatal("Could not read oauth secret file.")
-	}
-	oauthSecret := string(bytes.TrimSpace(oauthSecretRaw))
-
-	_, err = url.Parse(*githubEndpoint)
-	if err != nil {
+	if _, err := url.Parse(*githubEndpoint); err != nil {
 		logrus.WithError(err).Fatal("Must specify a valid --github-endpoint URL.")
 	}
 
-	githubClient := github.NewClient(oauthSecret, *githubEndpoint)
+	githubClient := github.NewClient(secretAgent.GetTokenGenerator(*githubTokenFile), *githubEndpoint)
 	if *dryRun {
-		githubClient = github.NewDryRunClient(oauthSecret, *githubEndpoint)
+		githubClient = github.NewDryRunClient(secretAgent.GetTokenGenerator(*githubTokenFile), *githubEndpoint)
 	}
 
 	gitClient, err := git.NewClient()
@@ -83,7 +74,7 @@ func main() {
 		logrus.WithError(err).Fatal("Error getting git client.")
 	}
 
-	server := NewServer(webhookSecret, gitClient, githubClient, configAgent)
+	server := NewServer(secretAgent.GetTokenGenerator(*webhookSecretFile), gitClient, githubClient, configAgent)
 
 	http.Handle("/", server)
 	logrus.Fatal(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
