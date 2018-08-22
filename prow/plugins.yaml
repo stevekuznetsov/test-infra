@@ -34,14 +34,17 @@ owners:
 
 approve:
 - repos:
+  - kubernetes/cloud-provider-azure
   - kubernetes/cluster-registry
   - kubernetes/contrib
   - kubernetes/dashboard
+  - kubernetes/dns
   - kubernetes/examples
   - kubernetes/features
   - kubernetes/federation
   - kubernetes/gengo
   - kubernetes/heapster
+  - kubernetes/ingress-gce
   - kubernetes/ingress-nginx
   - kubernetes/kops
   - kubernetes/kube-deploy
@@ -59,6 +62,8 @@ approve:
   - kubernetes/sig-release
   - kubernetes/steering
   - kubernetes/test-infra
+  - kubernetes/utils
+  - kubernetes-incubator/ip-masq-agent
   implicit_self_approve: true
   lgtm_acts_as_approve: true
 - repos:
@@ -236,6 +241,26 @@ plugins:
   - lgtm
   - trigger
 
+  kubernetes:
+  - assign
+  - cat
+  - cla
+  - dog
+  - golint
+  - heart
+  - help
+  - hold
+  - label
+  - lgtm
+  - lifecycle
+  - shrug
+  - sigmention
+  - size
+  - skip
+  - slackevents
+  - wip
+  - yuks
+
   kubernetes/client-go:
   - approve
 
@@ -284,6 +309,7 @@ plugins:
   - approve
 
   kubernetes/dns:
+  - approve
   - trigger
 
   kubernetes/examples:
@@ -295,6 +321,7 @@ plugins:
   - stage
 
   kubernetes/ingress-gce:
+  - approve
   - trigger
 
   kubernetes/ingress-nginx:
@@ -343,6 +370,10 @@ plugins:
   - blunderbuss
 
   kubernetes/kubernetes-docs-ko:
+  - approve
+  - blunderbuss
+
+  kubernetes/kubernetes-docs-zh:
   - approve
   - blunderbuss
 
@@ -402,29 +433,13 @@ plugins:
   - trigger
   - verify-owners
 
-  kubernetes/website:
+  kubernetes/utils:
   - approve
   - blunderbuss
 
-  kubernetes:
-  - assign
-  - cat
-  - cla
-  - dog
-  - golint
-  - heart
-  - help
-  - hold
-  - label
-  - lgtm
-  - lifecycle
-  - shrug
-  - sigmention
-  - size
-  - skip
-  - slackevents
-  - wip
-  - yuks
+  kubernetes/website:
+  - approve
+  - blunderbuss
 
   kubernetes-client:
   - assign
@@ -466,6 +481,10 @@ plugins:
   - lifecycle
   - size
 
+  kubernetes-incubator/kubespray:
+  - approve
+  - blunderbuss
+
   kubernetes-incubator/service-catalog:
   - approve
   - blunderbuss
@@ -476,6 +495,14 @@ plugins:
   - trigger
   - verify-owners
   - wip
+
+  kubernetes-incubator/ip-masq-agent:
+  - approve
+  - hold
+  - trigger
+
+  kubernetes-security/kubernetes:
+  - trigger
 
   kubernetes-sigs:
   - approve
@@ -517,6 +544,9 @@ plugins:
   kubernetes-sigs/cluster-api-provider-openstack:
   - trigger
 
+  kubernetes-sigs/cluster-api-provider-vsphere:
+  - trigger
+
   kubernetes-sigs/gcp-compute-persistent-disk-csi-driver:
   - trigger
 
@@ -530,9 +560,6 @@ plugins:
   - lgtm
   - lifecycle
   - size
-  - trigger
-
-  kubernetes-security/kubernetes:
   - trigger
 
   tensorflow/k8s:
