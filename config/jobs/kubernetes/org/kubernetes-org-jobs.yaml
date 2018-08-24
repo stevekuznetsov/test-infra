@@ -1,0 +1,10 @@
+presubmits:
+  kubernetes/org:
+  - name: pull-org-verify-all
+    always_run: true
+    decorate: true
+    spec:
+      containers:
+      - image: gcr.io/cloud-builders/bazel
+        command:
+        - ./hack/verify-all.sh
