@@ -5,6 +5,7 @@
 triggers:
 - repos:
   - kubernetes
+  - kubernetes-client
   - kubernetes-csi
   - kubernetes-incubator
   - kubernetes-security
@@ -28,6 +29,7 @@ triggers:
   join_org_url: "https://github.com/tensorflow/minigo/blob/master/CONTRIBUTING.md"
 - repos:
   - bazelbuild
+
 owners:
   mdyamlrepos:
   - kubernetes/website
@@ -67,6 +69,7 @@ approve:
   implicit_self_approve: true
   lgtm_acts_as_approve: true
 - repos:
+  - kubernetes-client
   - kubernetes-csi
   - kubernetes-sigs
   - client-go/unofficial-docs
@@ -164,6 +167,8 @@ slack:
             - foxish # 1.11 patch release manager
         release-1.12:
             - dougm # 1.12 branch manager
+            - hoegaarden # 1.12 branch manager shadow
+            - idealhack # 1.12 branch manager shadow
         feature-serverside-apply:
             - lavalamp # feature-serverside-apply "branch manager"
             - apelisse # feature-serverside-apply "branch manager"
@@ -399,10 +404,12 @@ plugins:
   - approve
   - blunderbuss
   - owners-label
+  - trigger
 
   kubernetes/perf-tests:
   - approve
   - blunderbuss
+  - trigger
 
   kubernetes/publishing-bot:
   - approve
@@ -442,17 +449,23 @@ plugins:
   - blunderbuss
 
   kubernetes-client:
+  - approve
   - assign
+  - blunderbuss
+  - cat
   - cla
+  - dog
+  - heart
+  - help
+  - hold
   - label
   - lgtm
   - lifecycle
+  - shrug
   - size
+  - skip
   - wip
-  - hold
-  - help
-  - cat
-  - dog
+  - yuks
 
   kubernetes-csi:
   - approve
@@ -623,6 +636,10 @@ external_plugins:
     events:
       - pull_request
   kubernetes-incubator/service-catalog:
+  - name: needs-rebase
+    events:
+      - pull_request
+  kubernetes-sigs/contributor-playground:
   - name: needs-rebase
     events:
       - pull_request
