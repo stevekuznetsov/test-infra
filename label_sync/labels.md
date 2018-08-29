@@ -120,13 +120,13 @@ larger set of contributors to apply/remove them.
 | Name | Description | Added By | Prow Plugin |
 | ---- | ----------- | -------- | --- |
 | <a id="approved" href="#approved">`approved`</a> | Indicates a PR has been approved by an approver from all required OWNERS files.| approvers |  [approve](https://git.k8s.io/test-infra/prow/plugins/approve) |
-| <a id="cherrypick-approved" href="#cherrypick-approved">`cherrypick-approved`</a> | Indicates a cherrypick PR into a release branch has been approved by the release branch manager.| humans | |
+| <a id="cherry-pick-approved" href="#cherry-pick-approved">`cherry-pick-approved`</a> | Indicates a cherry-pick PR into a release branch has been approved by the release branch manager. <br><br> This was previously `cherrypick-approved`, | humans | |
 | <a id="cherrypick-candidate" href="#cherrypick-candidate">`cherrypick-candidate`</a> | Denotes a PR to master as a candidate for cherry picking into a release branch.| humans | |
 | <a id="cncf-cla  no" href="#cncf-cla  no">`cncf-cla: no`</a> | Indicates the PR's author has not signed the CNCF CLA.| prow |  [cla](https://git.k8s.io/test-infra/prow/plugins/cla) |
 | <a id="cncf-cla  yes" href="#cncf-cla  yes">`cncf-cla: yes`</a> | Indicates the PR's author has signed the CNCF CLA.| prow |  [cla](https://git.k8s.io/test-infra/prow/plugins/cla) |
 | <a id="do-not-merge" href="#do-not-merge">`do-not-merge`</a> | DEPRECATED. Indicates that a PR should not merge. Label can only be manually applied/removed.| humans | |
 | <a id="do-not-merge/blocked-paths" href="#do-not-merge/blocked-paths">`do-not-merge/blocked-paths`</a> | Indicates that a PR should not merge because it touches files in blocked paths.| prow |  [blockade](https://git.k8s.io/test-infra/prow/plugins/blockade) |
-| <a id="do-not-merge/cherry-pick-not-approved" href="#do-not-merge/cherry-pick-not-approved">`do-not-merge/cherry-pick-not-approved`</a> | Indicates that a PR is not yet approved to merge into a release branch.| mungegithub cherrypick-label-unapproved munger | |
+| <a id="do-not-merge/cherry-pick-not-approved" href="#do-not-merge/cherry-pick-not-approved">`do-not-merge/cherry-pick-not-approved`</a> | Indicates that a PR is not yet approved to merge into a release branch.| prow |  [cherrypickunapproved](https://git.k8s.io/test-infra/prow/plugins/cherrypickunapproved) |
 | <a id="do-not-merge/hold" href="#do-not-merge/hold">`do-not-merge/hold`</a> | Indicates that a PR should not merge because someone has issued a /hold command.| anyone |  [hold](https://git.k8s.io/test-infra/prow/plugins/hold) |
 | <a id="do-not-merge/invalid-owners-file" href="#do-not-merge/invalid-owners-file">`do-not-merge/invalid-owners-file`</a> | Indicates that a PR should not merge because it has an invalid OWNERS file in it.| prow |  [verify-owners](https://git.k8s.io/test-infra/prow/plugins/verify-owners) |
 | <a id="do-not-merge/release-note-label-needed" href="#do-not-merge/release-note-label-needed">`do-not-merge/release-note-label-needed`</a> | Indicates that a PR should not merge because it's missing one of the release note labels. <br><br> This was previously `release-note-label-needed`, | prow |  [releasenote](https://git.k8s.io/test-infra/prow/plugins/releasenote) |
@@ -166,9 +166,33 @@ larger set of contributors to apply/remove them.
 | <a id="area/ghproxy" href="#area/ghproxy">`area/ghproxy`</a> | Issues or PRs related to code in /ghproxy| label | |
 | <a id="area/greenhouse" href="#area/greenhouse">`area/greenhouse`</a> | Issues or PRs related to code in /greenhouse (our remote bazel cache)| label | |
 | <a id="area/gubernator" href="#area/gubernator">`area/gubernator`</a> | Issues or PRs related to code in /gubernator| label | |
+| <a id="area/kind" href="#area/kind">`area/kind`</a> | Issues or PRs related to code in /kind| label | |
 | <a id="area/label_sync" href="#area/label_sync">`area/label_sync`</a> | Issues or PRs related to code in /label_sync| label | |
 | <a id="area/mungegithub" href="#area/mungegithub">`area/mungegithub`</a> | Issues or PRs related to code in /mungegithub| label | |
 | <a id="area/planter" href="#area/planter">`area/planter`</a> | Issues or PRs related to code in /planter| label | |
-| <a id="area/prow" href="#area/prow">`area/prow`</a> | Issues or PRs related to code in /prow| label | |
+| <a id="area/prow" href="#area/prow">`area/prow`</a> | Issues or PRs related to prow| label | |
+| <a id="area/prow/artifact-uploader" href="#area/prow/artifact-uploader">`area/prow/artifact-uploader`</a> | Issues or PRs related to prow's artifact-uploader component| label | |
+| <a id="area/prow/branchprotector" href="#area/prow/branchprotector">`area/prow/branchprotector`</a> | Issues or PRs related to prow's branchprotector component| label | |
+| <a id="area/prow/clonerefs" href="#area/prow/clonerefs">`area/prow/clonerefs`</a> | Issues or PRs related to prow's clonerefs component| label | |
+| <a id="area/prow/deck" href="#area/prow/deck">`area/prow/deck`</a> | Issues or PRs related to prow's deck component| label | |
+| <a id="area/prow/entrypoint" href="#area/prow/entrypoint">`area/prow/entrypoint`</a> | Issues or PRs related to prow's entrypoint component| label | |
+| <a id="area/prow/gcsupload" href="#area/prow/gcsupload">`area/prow/gcsupload`</a> | Issues or PRs related to prow's gcsupload component| label | |
+| <a id="area/prow/gerrit" href="#area/prow/gerrit">`area/prow/gerrit`</a> | Issues or PRs related to prow's gerrit component| label | |
+| <a id="area/prow/hook" href="#area/prow/hook">`area/prow/hook`</a> | Issues or PRs related to prow's hook component| label | |
+| <a id="area/prow/horologium" href="#area/prow/horologium">`area/prow/horologium`</a> | Issues or PRs related to prow's horologium component| label | |
+| <a id="area/prow/initupload" href="#area/prow/initupload">`area/prow/initupload`</a> | Issues or PRs related to prow's initupload component| label | |
+| <a id="area/prow/jenkins-operator" href="#area/prow/jenkins-operator">`area/prow/jenkins-operator`</a> | Issues or PRs related to prow's jenkins-operator component| label | |
+| <a id="area/prow/mkbuild-cluster" href="#area/prow/mkbuild-cluster">`area/prow/mkbuild-cluster`</a> | Issues or PRs related to prow's mkbuild-cluster component| label | |
+| <a id="area/prow/mkpj" href="#area/prow/mkpj">`area/prow/mkpj`</a> | Issues or PRs related to prow's mkpj component| label | |
+| <a id="area/prow/mkpod" href="#area/prow/mkpod">`area/prow/mkpod`</a> | Issues or PRs related to prow's mkpod component| label | |
+| <a id="area/prow/peribolos" href="#area/prow/peribolos">`area/prow/peribolos`</a> | Issues or PRs related to prow's peribolos component| label | |
+| <a id="area/prow/phony" href="#area/prow/phony">`area/prow/phony`</a> | Issues or PRs related to prow's phony component| label | |
+| <a id="area/prow/plank" href="#area/prow/plank">`area/prow/plank`</a> | Issues or PRs related to prow's plank component| label | |
+| <a id="area/prow/pod-utilities" href="#area/prow/pod-utilities">`area/prow/pod-utilities`</a> | Issues or PRs related to prow's pod-utilities component| label | |
+| <a id="area/prow/sidecar" href="#area/prow/sidecar">`area/prow/sidecar`</a> | Issues or PRs related to prow's sidecar component| label | |
+| <a id="area/prow/sinker" href="#area/prow/sinker">`area/prow/sinker`</a> | Issues or PRs related to prow's sinker component| label | |
+| <a id="area/prow/splice" href="#area/prow/splice">`area/prow/splice`</a> | Issues or PRs related to prow's splice component| label | |
+| <a id="area/prow/tide" href="#area/prow/tide">`area/prow/tide`</a> | Issues or PRs related to prow's tide component| label | |
+| <a id="area/prow/tot" href="#area/prow/tot">`area/prow/tot`</a> | Issues or PRs related to prow's tot component| label | |
 
 

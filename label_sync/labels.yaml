@@ -15,13 +15,15 @@ default:
       prowPlugin: approve
       addedBy: approvers
     - color: fef2c0
-      description: Indicates a cherrypick PR into a release branch has been approved by the release branch manager. # Consumed by the kubernetes/kubernetes cherrypick-queue.
-      name: cherrypick-approved
+      description: Indicates a cherry-pick PR into a release branch has been approved by the release branch manager. # Consumed by the kubernetes/kubernetes cherry-pick-queue.
+      name: cherry-pick-approved
       target: prs
       addedBy: humans
+      previously:
+        - name: cherrypick-approved
     - color: fef2c0
       description: Denotes a PR to master as a candidate for cherry picking into a release branch.
-      name: cherrypick-candidate
+      name: cherrypick-candidate # TODO: rename as cherry-pick-candidate
       target: prs
       addedBy: humans
     - color: d455d0
@@ -103,7 +105,8 @@ default:
       description: Indicates that a PR is not yet approved to merge into a release branch.
       name: do-not-merge/cherry-pick-not-approved
       target: prs
-      addedBy: mungegithub cherrypick-label-unapproved munger
+      addedBy: prow
+      prowPlugin: cherrypickunapproved
     - color: e11d21
       description: Indicates that a PR should not merge because someone has issued a /hold command.
       name: do-not-merge/hold
@@ -695,6 +698,11 @@ repos:
         target: both
         addedBy: label
       - color: 0052cc
+        description: Issues or PRs related to code in /kind
+        name: area/kind
+        target: both
+        addedBy: label
+      - color: 0052cc
         description: Issues or PRs related to code in /label_sync
         name: area/label_sync
         target: both
@@ -710,7 +718,122 @@ repos:
         target: both
         addedBy: label
       - color: 0052cc
-        description: Issues or PRs related to code in /prow
+        description: Issues or PRs related to prow
         name: area/prow
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's artifact-uploader component
+        name: area/prow/artifact-uploader
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's branchprotector component
+        name: area/prow/branchprotector
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's clonerefs component
+        name: area/prow/clonerefs
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's deck component
+        name: area/prow/deck
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's entrypoint component
+        name: area/prow/entrypoint
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's gcsupload component
+        name: area/prow/gcsupload
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's gerrit component
+        name: area/prow/gerrit
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's hook component
+        name: area/prow/hook
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's horologium component
+        name: area/prow/horologium
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's initupload component
+        name: area/prow/initupload
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's jenkins-operator component
+        name: area/prow/jenkins-operator
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's mkbuild-cluster component
+        name: area/prow/mkbuild-cluster
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's mkpj component
+        name: area/prow/mkpj
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's mkpod component
+        name: area/prow/mkpod
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's peribolos component
+        name: area/prow/peribolos
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's phony component
+        name: area/prow/phony
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's plank component
+        name: area/prow/plank
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's sidecar component
+        name: area/prow/sidecar
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's sinker component
+        name: area/prow/sinker
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's splice component
+        name: area/prow/splice
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's tide component
+        name: area/prow/tide
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's tot component
+        name: area/prow/tot
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to prow's pod-utilities component
+        name: area/prow/pod-utilities
         target: both
         addedBy: label
