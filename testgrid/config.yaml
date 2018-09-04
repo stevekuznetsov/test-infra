@@ -1460,9 +1460,6 @@ test_groups:
   gcs_prefix: kubernetes-multiarch-e2e-results/logs/kubeadm-luxas-scaleway-arm64
 - name: periodic-multi-platform-kubeadm-packet-arm64
   gcs_prefix: kubernetes-multiarch-e2e-results/logs/kubeadm-luxas-packet-arm64
-# garbage collector tests
-- name: ci-kubernetes-e2e-gci-gce-garbage
-  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gci-gce-garbage
 # kubeadm tests
 - name: ci-kubernetes-e2e-kubeadm-gce
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-kubeadm-gce
@@ -2104,6 +2101,11 @@ test_groups:
   num_columns_recent: 30
 - name: kubeflow-chainer-operator-postsubmit
   gcs_prefix: kubernetes-jenkins/logs/kubeflow_chainer-operator/kubeflow-chainer-operator-postsubmit
+- name: kubeflow-arena-presubmit
+  gcs_prefix: kubernetes-jenkins/pr-logs/directory/kubeflow-arena-presubmit
+  num_columns_recent: 30
+- name: kubeflow-arena-postsubmit
+  gcs_prefix: kubernetes-jenkins/logs/kubeflow_arena/kubeflow-arena-postsubmit
 - name: tf-minigo-periodic
   gcs_prefix: kubernetes-jenkins/logs/tf-minigo-periodic
 - name: tf-minigo-presubmit
@@ -2742,6 +2744,9 @@ test_groups:
   num_failures_to_alert: 1
 - name: ci-kubernetes-dind-conformance
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-dind-conformance
+  num_columns_recent: 3
+- name: ci-kubernetes-kind-conformance-parallel
+  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-kind-conformance-parallel
   num_columns_recent: 3
 
 # cloud-provider-openstack e2e conformance tests
@@ -4179,8 +4184,6 @@ dashboards:
     test_group_name: ci-kops-build
   - name: debian-unstable
     test_group_name: ci-kubernetes-build-debian-unstable
-  - name: gci-garbage-collector
-    test_group_name: ci-kubernetes-e2e-gci-gce-garbage
 
 - name: sig-release-1.10-all
   dashboard_tab:
@@ -4755,6 +4758,12 @@ dashboards:
   - name: kubeflow-chainer-operator-presubmit
     description: Presubmit tests for kubeflow/chainer-operator.
     test_group_name: kubeflow-chainer-operator-presubmit
+  - name: kubeflow-arena-postsubmit
+    description: Postsubmit tests for kubeflow/arena.
+    test_group_name: kubeflow-arena-postsubmit
+  - name: kubeflow-arena-presubmit
+    description: Presubmit tests for kubeflow/arena.
+    test_group_name: kubeflow-arena-presubmit
   - name: spark-periodic-default-gke
     description: Periodic builds and testing of Apache Spark on default version of GKE.
     test_group_name: spark-periodic-default-gke
@@ -5305,14 +5314,14 @@ dashboards:
   - name: crio-e2e-fedora
     test_group_name: test_pull_request_crio_e2e_fedora
     open_test_template:
-      url: https://gcsweb-ci.svc.ci.openshift.org/gcs/<gcs_prefix>/<changelist>/artifacts/artifacts/junit_01.xml
+      url: https://gcsweb-ci.svc.ci.openshift.org/gcs/<gcs_prefix>/<changelist>
     results_url_template:
       url: https://gcsweb-ci.svc.ci.openshift.org/gcs/<gcs_prefix>
     base_options: width=10
   - name: crio-e2e-rhel
     test_group_name: test_pull_request_crio_e2e_rhel
     open_test_template:
-      url: https://gcsweb-ci.svc.ci.openshift.org/gcs/<gcs_prefix>/<changelist>/artifacts/artifacts/junit_01.xml
+      url: https://gcsweb-ci.svc.ci.openshift.org/gcs/<gcs_prefix>/<changelist>
     results_url_template:
       url: https://gcsweb-ci.svc.ci.openshift.org/gcs/<gcs_prefix>
     base_options: width=10
@@ -5769,6 +5778,9 @@ dashboards:
   - name: dind
     description: Runs e2e tests against a dind cluster.
     test_group_name: pull-kubernetes-dind-e2e
+  - name: ci-kind-conformance-parallel
+    description: Runs parallel conformance e2e tests against a dind cluster.
+    test_group_name: ci-kubernetes-kind-conformance-parallel
   - name: bazel
     description: Runs bazel test //... on the test-infra repo.
     test_group_name: ci-test-infra-bazel

@@ -41,6 +41,7 @@ import (
 	_ "k8s.io/test-infra/prow/plugins/override"
 	_ "k8s.io/test-infra/prow/plugins/owners-label"
 	_ "k8s.io/test-infra/prow/plugins/releasenote"
+	_ "k8s.io/test-infra/prow/plugins/require-matching-label"
 	_ "k8s.io/test-infra/prow/plugins/requiresig"
 	_ "k8s.io/test-infra/prow/plugins/shrug"
 	_ "k8s.io/test-infra/prow/plugins/sigmention"
@@ -51,6 +52,7 @@ import (
 	_ "k8s.io/test-infra/prow/plugins/trigger"
 	_ "k8s.io/test-infra/prow/plugins/updateconfig"
 	_ "k8s.io/test-infra/prow/plugins/verify-owners"
+	_ "k8s.io/test-infra/prow/plugins/welcome"
 	_ "k8s.io/test-infra/prow/plugins/wip"
 	_ "k8s.io/test-infra/prow/plugins/yuks"
 )
