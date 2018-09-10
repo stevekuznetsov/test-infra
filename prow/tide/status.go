@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package tide contains a controller for managing a tide pool of PRs. The
-// controller will automatically retest PRs in the pool and merge them if they
-// pass tests.
 package tide
 
 import (
@@ -77,11 +74,12 @@ func (sc *statusController) shutdown() {
 // requirementDiff calculates the diff between a PR and a TideQuery.
 // This diff is defined with a string that describes some subset of the
 // differences and an integer counting the total number of differences.
-// The diff count should always reflect the total number of differences between
+// The diff count should always reflect the scale of the differences between
 // the current state of the PR and the query, but the message returned need not
 // attempt to convey all of that information if some differences are more severe.
 // For instance, we need to convey that a PR is open against a forbidden branch
 // more than we need to detail which status contexts are failed against the PR.
+// To this end, some differences are given a higher diff weight than others.
 // Note: an empty diff can be returned if the reason that the PR does not match
 // the TideQuery is unknown. This can happen happen if this function's logic
 // does not match GitHub's and does not indicate that the PR matches the query.
@@ -102,26 +100,40 @@ func requirementDiff(pr *PullRequest, q *config.TideQuery, cc contextChecker) (s
 		return labels[:i]
 	}
 
+	// Weight incorrect branches with very high diff so that we select the query
+	// for the correct branch.
+	targetBranchBlacklisted := false
 	for _, excludedBranch := range q.ExcludedBranches {
 		if string(pr.BaseRef.Name) == excludedBranch {
-			desc = fmt.Sprintf(" Merging to branch %s is forbidden.", pr.BaseRef.Name)
-			diff = 1
+			targetBranchBlacklisted = true
+			break
 		}
 	}
-
 	// if no whitelist is configured, the target is OK by default
 	targetBranchWhitelisted := len(q.IncludedBranches) == 0
 	for _, includedBranch := range q.IncludedBranches {
 		if string(pr.BaseRef.Name) == includedBranch {
 			targetBranchWhitelisted = true
+			break
+		}
+	}
+	if targetBranchBlacklisted || !targetBranchWhitelisted {
+		diff += 1000
+		if desc == "" {
+			desc = fmt.Sprintf(" Merging to branch %s is forbidden.", pr.BaseRef.Name)
 		}
 	}
 
-	if !targetBranchWhitelisted {
-		desc = fmt.Sprintf(" Merging to branch %s is forbidden.", pr.BaseRef.Name)
-		diff++
+	// Weight incorrect milestone with relatively high diff so that we select the
+	// query for the correct milestone (but choose favor query for correct branch).
+	if q.Milestone != "" && (pr.Milestone == nil || string(pr.Milestone.Title) != q.Milestone) {
+		diff += 100
+		if desc == "" {
+			desc = fmt.Sprintf(" Must be in milestone %s.", q.Milestone)
+		}
 	}
 
+	// Weight incorrect labels and statues with low (normal) diff values.
 	var missingLabels []string
 	for _, l1 := range q.Labels {
 		var found bool
@@ -183,13 +195,6 @@ func requirementDiff(pr *PullRequest, q *config.TideQuery, cc contextChecker) (s
 			desc = fmt.Sprintf(" Job %s has not succeeded.", trunced[0])
 		} else {
 			desc = fmt.Sprintf(" Jobs %s have not succeeded.", strings.Join(trunced, ", "))
-		}
-	}
-
-	if q.Milestone != "" && (pr.Milestone == nil || string(pr.Milestone.Title) != q.Milestone) {
-		diff++
-		if desc == "" {
-			desc = fmt.Sprintf(" Must be in milestone %s.", q.Milestone)
 		}
 	}
 
@@ -359,9 +364,10 @@ func (sc *statusController) sync(pool map[string]PullRequest) {
 	// We offset for 30 seconds of overlap because GitHub sometimes doesn't
 	// include recently changed/new PRs in the query results.
 	sinceTime := sc.lastSuccessfulQueryStart.Add(-30 * time.Second)
-	query := sc.ca.Config().Tide.Queries.AllPRsSince(sinceTime)
+	query := sc.ca.Config().Tide.Queries.AllOpenPRs()
 	queryStartTime := time.Now()
-	allPRs, err := search(context.Background(), sc.ghc, sc.logger, query)
+	searcher := newSearchExecutor(context.Background(), sc.ghc, sc.logger, query)
+	allPRs, err := searcher.searchSince(sinceTime)
 	if err != nil {
 		sc.logger.WithError(err).Errorf("Searching for open PRs.")
 		return

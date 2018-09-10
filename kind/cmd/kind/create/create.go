@@ -22,11 +22,14 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/test-infra/kind/pkg/cluster"
+	"k8s.io/test-infra/kind/pkg/cluster/config"
+	"k8s.io/test-infra/kind/pkg/cluster/config/encoding"
 )
 
 type flags struct {
-	Name   string
-	Config string
+	Name      string
+	Config    string
+	ImageName string
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -43,21 +46,22 @@ func NewCommand() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", "1", "the cluster name")
 	cmd.Flags().StringVar(&flags.Config, "config", "", "path to create config file")
+	cmd.Flags().StringVar(&flags.ImageName, "image", "", "name of the image to use for booting the cluster. If this is non-empty, it will override the value specified in the --config file.")
 	return cmd
 }
 
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
 	// load the config
-	config, err := cluster.LoadCreateConfig(flags.Config)
+	cfg, err := encoding.Load(flags.Config)
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
 	}
 	// validate the config
-	err = config.Validate()
+	err = cfg.Validate()
 	if err != nil {
 		log.Error("Invalid configuration!")
-		configErrors := err.(cluster.ConfigErrors)
+		configErrors := err.(*config.Errors)
 		for _, problem := range configErrors.Errors() {
 			log.Error(problem)
 		}
@@ -68,7 +72,16 @@ func run(flags *flags, cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("Failed to create cluster context! %v", err)
 	}
-	err = ctx.Create(config)
+	convertedCfg := cfg.ToCurrent()
+	if flags.ImageName != "" {
+		convertedCfg.Image = flags.ImageName
+		err := convertedCfg.Validate()
+		if err != nil {
+			log.Errorf("Invalid flags, configuration failed validation: %v", err)
+			log.Fatal("Aborting due to invalid configuration.")
+		}
+	}
+	err = ctx.Create(convertedCfg)
 	if err != nil {
 		log.Fatalf("Failed to create cluster: %v", err)
 	}

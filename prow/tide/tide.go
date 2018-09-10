@@ -257,7 +257,7 @@ func (c *Controller) Sync() error {
 	c.logger.Debug("Building tide pool.")
 	prs := make(map[string]PullRequest)
 	for _, q := range c.ca.Config().Tide.Queries {
-		results, err := search(ctx, c.ghc, c.logger, q.Query())
+		results, err := newSearchExecutor(ctx, c.ghc, c.logger, q.Query()).search()
 		if err != nil {
 			return err
 		}
@@ -739,10 +739,19 @@ func (c *Controller) mergePRs(sp subpool, prs []PullRequest) error {
 	for i, pr := range prs {
 		backoff := time.Second * 4
 		log := sp.log.WithFields(pr.logFields())
+		mergeMethod := c.ca.Config().Tide.MergeMethod(sp.org, sp.repo)
+		if squashLabel := c.ca.Config().Tide.SquashLabel; squashLabel != "" {
+			for _, prlabel := range pr.Labels.Nodes {
+				if string(prlabel.Name) == squashLabel {
+					mergeMethod = github.MergeSquash
+					break
+				}
+			}
+		}
 		for retry := 0; retry < maxRetries; retry++ {
 			if err := c.ghc.Merge(sp.org, sp.repo, int(pr.Number), github.MergeDetails{
 				SHA:         string(pr.HeadRefOID),
-				MergeMethod: string(c.ca.Config().Tide.MergeMethod(sp.org, sp.repo)),
+				MergeMethod: string(mergeMethod),
 			}); err != nil {
 				if _, ok := err.(github.ModifiedHeadError); ok {
 					// This is a possible source of incorrect behavior. If someone
@@ -1101,33 +1110,6 @@ func (c *Controller) dividePool(pool map[string]PullRequest, pjs []kube.ProwJob)
 	return sps, nil
 }
 
-func search(ctx context.Context, ghc githubClient, log *logrus.Entry, q string) ([]PullRequest, error) {
-	var ret []PullRequest
-	vars := map[string]interface{}{
-		"query":        githubql.String(q),
-		"searchCursor": (*githubql.String)(nil),
-	}
-	var totalCost int
-	var remaining int
-	for {
-		sq := searchQuery{}
-		if err := ghc.Query(ctx, &sq, vars); err != nil {
-			return nil, err
-		}
-		totalCost += int(sq.RateLimit.Cost)
-		remaining = int(sq.RateLimit.Remaining)
-		for _, n := range sq.Search.Nodes {
-			ret = append(ret, n.PullRequest)
-		}
-		if !sq.Search.PageInfo.HasNextPage {
-			break
-		}
-		vars["searchCursor"] = githubql.NewString(sq.Search.PageInfo.EndCursor)
-	}
-	log.Debugf("Search for query \"%s\" returned %d PRs and cost %d point(s). %d remaining.", q, len(ret), totalCost, remaining)
-	return ret, nil
-}
-
 // PullRequest holds graphql data about a PR, including its commits and their contexts.
 type PullRequest struct {
 	Number githubql.Int
@@ -1193,7 +1175,8 @@ type searchQuery struct {
 			HasNextPage githubql.Boolean
 			EndCursor   githubql.String
 		}
-		Nodes []struct {
+		IssueCount githubql.Int
+		Nodes      []struct {
 			PullRequest PullRequest `graphql:"... on PullRequest"`
 		}
 	} `graphql:"search(type: ISSUE, first: 100, after: $searchCursor, query: $query)"`
