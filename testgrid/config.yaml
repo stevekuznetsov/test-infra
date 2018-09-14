@@ -23,6 +23,7 @@ default_test_group:
   alert_stale_results_hours: 0 # Don't alert for staleness by default.
   num_failures_to_alert: 3 # Consider a test failed if it has 3 or more consecutive failures.
   num_passes_to_disable_alert: 1 # Consider a failing test passing if it has 1 or more consecutive passes.
+  code_search_path: github.com/kubernetes/kubernetes/search # URL for regression search links.
 
 default_dashboard_tab:
   open_test_template: # The URL template to visit after clicking on a cell
@@ -268,6 +269,8 @@ test_groups:
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-kops-gce-ha
 - name: ci-kubernetes-e2e-gce-canary
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gce-canary
+- name: ci-kubernetes-e2e-gce-podutil-canary
+  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gce-podutil-canary
 - name: ci-kubernetes-e2e-gce-device-plugin-gpu
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gce-device-plugin-gpu
   alert_stale_results_hours: 24
@@ -499,11 +502,6 @@ test_groups:
 - name: ci-kubernetes-e2e-gci-gke-ingress
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gci-gke-ingress
   alert_stale_results_hours: 24
-- name: ci-kubernetes-e2e-gke-large-correctness
-  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gke-large-correctness
-  days_of_results: 60
-  num_columns_recent: 3
-  num_failures_to_alert: 1
 - name: ci-kubernetes-e2e-gke-large-performance
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gke-large-performance
   days_of_results: 60
@@ -675,10 +673,6 @@ test_groups:
     - target_config: Tests name
     - target_config: Context
     name_format: '%s [%s]'
-- name: ci-kubernetes-e2e-gce-large-manual-down
-  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gce-large-manual-down
-- name: ci-kubernetes-e2e-gke-large-deploy
-  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gke-large-deploy
 - name: ci-kubernetes-cross-build
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-cross-build
 - name: ci-kubernetes-node-kubelet-alpha
@@ -725,8 +719,6 @@ test_groups:
     name_format: '%s [%s]'
 - name: ci-kops-build
   gcs_prefix: kubernetes-jenkins/logs/ci-kops-build
-- name: ci-kubernetes-e2e-gce-large-manual-up
-  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gce-large-manual-up
 - name: maintenance-boskos-config-upload
   gcs_prefix: kubernetes-jenkins/logs/maintenance-boskos-config-upload
 - name: maintenance-ci-testgrid-config-upload
@@ -742,8 +734,6 @@ test_groups:
   gcs_prefix: kubernetes-jenkins/logs/maintenance-pull-scale-janitor
 - name: ci-kubernetes-build-debian-unstable
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-build-debian-unstable
-- name: ci-kubernetes-e2e-gke-large-teardown
-  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gke-large-teardown
 - name: ci-kubernetes-e2e-gce-taint-evict
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gce-taint-evict
 # stable3 (1.8) e2e
@@ -1042,6 +1032,12 @@ test_groups:
   - configuration_value: node_os_image
   - configuration_value: Commit
   - configuration_value: infra-commit
+- name: ci-kubernetes-e2e-gke-ubuntu1-k8sbeta-gpu
+  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gke-ubuntu1-k8sbeta-gpu
+  column_header:
+  - configuration_value: node_os_image
+  - configuration_value: Commit
+  - configuration_value: infra-commit
 - name: ci-kubernetes-e2e-gke-ubuntu1-k8sbeta-reboot
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gke-ubuntu1-k8sbeta-reboot
   column_header:
@@ -1088,6 +1084,12 @@ test_groups:
   - configuration_value: infra-commit
 - name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable1-flaky
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gke-ubuntu1-k8sstable1-flaky
+  column_header:
+  - configuration_value: node_os_image
+  - configuration_value: Commit
+  - configuration_value: infra-commit
+- name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable1-gpu
+  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gke-ubuntu1-k8sstable1-gpu
   column_header:
   - configuration_value: node_os_image
   - configuration_value: Commit
@@ -1142,6 +1144,12 @@ test_groups:
   - configuration_value: node_os_image
   - configuration_value: Commit
   - configuration_value: infra-commit
+- name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable2-gpu
+  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gke-ubuntu1-k8sstable2-gpu
+  column_header:
+  - configuration_value: node_os_image
+  - configuration_value: Commit
+  - configuration_value: infra-commit
 - name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable2-reboot
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gke-ubuntu1-k8sstable2-reboot
   column_header:
@@ -1188,6 +1196,12 @@ test_groups:
   - configuration_value: infra-commit
 - name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable3-flaky
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gke-ubuntu1-k8sstable3-flaky
+  column_header:
+  - configuration_value: node_os_image
+  - configuration_value: Commit
+  - configuration_value: infra-commit
+- name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable3-gpu
+  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gke-ubuntu1-k8sstable3-gpu
   column_header:
   - configuration_value: node_os_image
   - configuration_value: Commit
@@ -2130,6 +2144,17 @@ test_groups:
   gcs_prefix: ppc64le-kubernetes/logs/ci-conformance-kubernetes
 - name: ppc64le-unit
   gcs_prefix: ppc64le-kubernetes/logs/ci-unit-kubernetes
+# kubernetes org jobs
+- name: ci-org-peribolos
+  gcs_prefix: kubernetes-jenkins/logs/ci-org-peribolos
+- name: post-org-peribolos
+  gcs_prefix: kubernetes-jenkins/logs/post-org-peribolos
+- name: pull-org-test-all
+  gcs_prefix: kubernetes-jenkins/pr-logs/directory/pull-org-test-all
+  num_columns_recent: 30
+- name: pull-org-verify-all
+  gcs_prefix: kubernetes-jenkins/pr-logs/directory/pull-org-verify-all
+  num_columns_recent: 30
 #presubmits
 - name: pull-cluster-api-build
   gcs_prefix: kubernetes-jenkins/pr-logs/directory/pull-cluster-api-build
@@ -2732,6 +2757,9 @@ test_groups:
 - name: ci-kubernetes-kind-conformance
   gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-kind-conformance
   num_columns_recent: 3
+- name: ci-kubernetes-kind-conformance-parallel
+  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-kind-conformance-parallel
+  num_columns_recent: 3
 
 # cloud-provider-openstack e2e conformance tests
 # name format: PR trigger ci-presubmit-${zuul-job-name}
@@ -2814,6 +2842,12 @@ test_groups:
 - name: digitalocean-e2e-conformance-v1.11
   gcs_prefix: k8s-conformance-digitalocean/e2e-conformance-v1.11
 
+# BaiduCloud Test Groups
+- name: baiducloud-e2e-conformance-v1.8
+  gcs_prefix: k8s-conformance-baiducloud/baiducloud-e2e-conformance-v1.8
+- name: baiducloud-e2e-conformance-v1.11
+  gcs_prefix: k8s-conformance-baiducloud/baiducloud-e2e-conformance-v1.11
+
 #
 # Start dashboards
 #
@@ -2870,6 +2904,9 @@ dashboards:
   - name: kind, master (dev)
     description: Runs conformance tests using kubetest against latest kubernetes master with a kubernetes-in-docker cluster
     test_group_name: ci-kubernetes-kind-conformance
+  - name: kind, master (dev) [non-serial]
+    description: Runs conformance tests using kubetest against latest kubernetes master with a kubernetes-in-docker cluster, skipping [Serial] tests
+    test_group_name: ci-kubernetes-kind-conformance-parallel
   - name: local-up-cluster, master (dev)
     description: Runs conformance tests using kubetest with hack/local-up-cluster.sh
     test_group_name: ci-kubernetes-local-e2e
@@ -2891,6 +2928,12 @@ dashboards:
   - name: DigitalOcean v1.11
     description: Runs conformance test using kubetest against kubernetes v1.11 on DigitalOcean
     test_group_name: digitalocean-e2e-conformance-v1.11
+  - name: BaiduCloud v1.8
+    description: Runs conformance test using kubetest against kubernetes v1.8 on BaiduCloud
+    test_group_name: baiducloud-e2e-conformance-v1.8
+  - name: BaiduCloud v1.11
+    description: Runs conformance test using kubetest against kubernetes v1.11 on BaiduCloud
+    test_group_name: baiducloud-e2e-conformance-v1.11
 
 - name: conformance-gce
   dashboard_tab:
@@ -2945,6 +2988,9 @@ dashboards:
   - name: kind, master (dev)
     description: Runs conformance tests using kubetest against latest kubernetes master with a kubernetes-in-docker cluster
     test_group_name: ci-kubernetes-kind-conformance
+  - name: kind, master (dev) [non-serial]
+    description: Runs conformance tests using kubetest against latest kubernetes master with a kubernetes-in-docker cluster, skipping [Serial] tests
+    test_group_name: ci-kubernetes-kind-conformance-parallel
   - name: local-up-cluster, master (dev)
     description: Runs conformance tests using kubetest with local-up-cluster
     test_group_name: ci-kubernetes-local-e2e
@@ -3008,6 +3054,16 @@ dashboards:
     description: Runs conformance test using kubetest against kubernetes v1.11 on DigitalOcean
     test_group_name: digitalocean-e2e-conformance-v1.11
 
+# BaiduCloud Dashboard
+- name: conformance-cloud-provider-baiducloud
+  dashboard_tab:
+  - name: BaiduCloud v1.8
+    description: Runs conformance test using kubetest against kubernetes v1.8 on BaiduCloud
+    test_group_name: baiducloud-e2e-conformance-v1.8
+  - name: BaiduCloud v1.11
+    description: Runs conformance test using kubetest against kubernetes v1.11 on BaiduCloud
+    test_group_name: baiducloud-e2e-conformance-v1.11
+
 - name: canonical-ubuntu1-k8sbeta
   dashboard_tab:
   - name: e2enode-ubuntu1-k8sbeta-gkespec
@@ -3028,6 +3084,8 @@ dashboards:
     test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sbeta-default
   - name: gke-ubuntu1-k8sbeta-flaky
     test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sbeta-flaky
+  - name: gke-ubuntu1-k8sbeta-gpu
+    test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sbeta-gpu
   - name: gke-ubuntu1-k8sbeta-reboot
     test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sbeta-reboot
   - name: gke-ubuntu1-k8sbeta-serial
@@ -3057,6 +3115,8 @@ dashboards:
     test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable1-default
   - name: gke-ubuntu1-k8sstable1-flaky
     test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable1-flaky
+  - name: gke-ubuntu1-k8sstable1-gpu
+    test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable1-gpu
   - name: gke-ubuntu1-k8sstable1-reboot
     test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable1-reboot
   - name: gke-ubuntu1-k8sstable1-serial
@@ -3086,6 +3146,8 @@ dashboards:
     test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable2-default
   - name: gke-ubuntu1-k8sstable2-flaky
     test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable2-flaky
+  - name: gke-ubuntu1-k8sstable2-gpu
+    test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable2-gpu
   - name: gke-ubuntu1-k8sstable2-reboot
     test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable2-reboot
   - name: gke-ubuntu1-k8sstable2-serial
@@ -3115,6 +3177,8 @@ dashboards:
     test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable3-default
   - name: gke-ubuntu1-k8sstable3-flaky
     test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable3-flaky
+  - name: gke-ubuntu1-k8sstable3-gpu
+    test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable3-gpu
   - name: gke-ubuntu1-k8sstable3-reboot
     test_group_name: ci-kubernetes-e2e-gke-ubuntu1-k8sstable3-reboot
   - name: gke-ubuntu1-k8sstable3-serial
@@ -4264,8 +4328,6 @@ dashboards:
     test_group_name: ci-kubernetes-e2e-gce-cos-k8sstable2-reboot
   - name: gke-cos-1.10-reboot
     test_group_name: ci-kubernetes-e2e-gke-cos-k8sstable2-reboot
-  - name: soak-gci-gce-1.10
-    test_group_name: ci-kubernetes-soak-gci-gce-stable2
   - name: gci-gce-scalability-1.10
     test_group_name: ci-kubernetes-e2e-gci-gce-scalability-stable2
   - name: gce-device-plugin-gpu-1.10
@@ -5283,17 +5345,9 @@ dashboards:
   dashboard_tab:
   - name: crio-e2e-fedora
     test_group_name: test_pull_request_crio_e2e_fedora
-    open_test_template:
-      url: https://gcsweb-ci.svc.ci.openshift.org/gcs/<gcs_prefix>/<changelist>
-    results_url_template:
-      url: https://gcsweb-ci.svc.ci.openshift.org/gcs/<gcs_prefix>
     base_options: width=10
   - name: crio-e2e-rhel
     test_group_name: test_pull_request_crio_e2e_rhel
-    open_test_template:
-      url: https://gcsweb-ci.svc.ci.openshift.org/gcs/<gcs_prefix>/<changelist>
-    results_url_template:
-      url: https://gcsweb-ci.svc.ci.openshift.org/gcs/<gcs_prefix>
     base_options: width=10
 
 - name: sig-node-containerd
@@ -5598,8 +5652,6 @@ dashboards:
 
 - name: sig-scalability-gke
   dashboard_tab:
-  - name: gke-large-correctness
-    test_group_name: ci-kubernetes-e2e-gke-large-correctness
   - name: gke-large-performance
     test_group_name: ci-kubernetes-e2e-gke-large-performance
   - name: gke-large-performance-regional
@@ -5633,17 +5685,6 @@ dashboards:
   dashboard_tab:
   - name: scheduler
     test_group_name: ci-benchmark-scheduler-master
-
-- name: sig-scalability-manual
-  dashboard_tab:
-  - name: gce-large-manual-up
-    test_group_name: ci-kubernetes-e2e-gce-large-manual-up
-  - name: gce-large-manual-down
-    test_group_name: ci-kubernetes-e2e-gce-large-manual-down
-  - name: gke-large-deploy
-    test_group_name: ci-kubernetes-e2e-gke-large-deploy
-  - name: gke-large-teardown
-    test_group_name: ci-kubernetes-e2e-gke-large-teardown
 
 - name: sig-scheduling
   dashboard_tab:
@@ -5868,6 +5909,10 @@ dashboards:
     test_group_name: ci-kubernetes-e2e-gce-canary
     code_search_url_template:
       url: https://github.com/kubernetes/test-infra/compare/<start-custom-0>...<end-custom-0>
+  - name: gce-podutil-canary
+    test_group_name: ci-kubernetes-e2e-gce-podutil-canary
+    code_search_url_template:
+      url: https://github.com/kubernetes/test-infra/compare/<start-custom-0>...<end-custom-0>
   - name: gke-canary
     test_group_name: ci-kubernetes-e2e-gke-canary
     code_search_url_template:
@@ -5906,6 +5951,23 @@ dashboards:
     test_group_name: pull-kubernetes-verify-prow
   - name: pull-kubernetes-integration-prow
     test_group_name: pull-kubernetes-integration-prow
+
+- name: sig-testing-org
+  dashboard_tab:
+  - name: ci-peribolos
+    test_group_name: ci-org-peribolos
+  - name: post-peribolos
+    test_group_name: post-org-peribolos
+    code_search_url_template:
+      url: https://github.com/kubernetes/org/compare/<start-custom-0>...<end-custom-0>
+  - name: test-all
+    test_group_name: pull-org-test-all
+    code_search_url_template:
+      url: https://github.com/kubernetes/org/compare/<start-custom-0>...<end-custom-0>
+  - name: verify-all
+    test_group_name: pull-org-verify-all
+    code_search_url_template:
+      url: https://github.com/kubernetes/org/compare/<start-custom-0>...<end-custom-0>
 
 - name: sig-ui
   dashboard_tab:
@@ -6656,12 +6718,12 @@ dashboard_groups:
   - sig-scalability-kubemark
   - sig-scalability-perf-tests
   - sig-scalability-benchmarks
-  - sig-scalability-manual
 
 - name: sig-testing
   dashboard_names:
   - sig-testing-misc
   - sig-testing-canaries
+  - sig-testing-org
 
 - name: sig-gcp
   dashboard_names:
@@ -6683,6 +6745,7 @@ dashboard_groups:
   - conformance-cloud-provider-openstack
   - conformance-alibaba-cloud-provider
   - conformance-cloud-provider-digitalocean
+  - conformance-cloud-provider-baiducloud
   - conformance-gardener
 
 - name: vmware
