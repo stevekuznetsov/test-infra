@@ -26,11 +26,11 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"k8s.io/test-infra/prow/flagutil"
 
 	"k8s.io/test-infra/prow/config"
 	"k8s.io/test-infra/prow/gerrit/adapter"
 	"k8s.io/test-infra/prow/gerrit/client"
-	"k8s.io/test-infra/prow/kube"
 	"k8s.io/test-infra/prow/logrusutil"
 )
 
@@ -38,11 +38,17 @@ type options struct {
 	cookiefilePath   string
 	configPath       string
 	jobConfigPath    string
+	dryRun           bool
+	kubernetes       flagutil.KubernetesOptions
 	projects         client.ProjectsFlag
 	lastSyncFallback string
 }
 
 func (o *options) Validate() error {
+	if err := o.kubernetes.Validate(o.dryRun); err != nil {
+		return err
+	}
+
 	if len(o.projects) == 0 {
 		return errors.New("--gerrit-projects must be set")
 	}
@@ -66,12 +72,17 @@ func gatherOptions() options {
 	o := options{
 		projects: client.ProjectsFlag{},
 	}
-	flag.StringVar(&o.configPath, "config-path", "", "Path to config.yaml.")
-	flag.StringVar(&o.jobConfigPath, "job-config-path", "", "Path to prow job configs")
-	flag.StringVar(&o.cookiefilePath, "cookiefile", "", "Path to git http.cookiefile, leave empty for anonymous")
-	flag.Var(&o.projects, "gerrit-projects", "Set of gerrit repos to monitor on a host example: --gerrit-host=https://android.googlesource.com=platform/build,toolchain/llvm, repeat flag for each host")
-	flag.StringVar(&o.lastSyncFallback, "last-sync-fallback", "", "Path to persistent volume to load the last sync time")
-	flag.Parse()
+	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+
+	fs.StringVar(&o.configPath, "config-path", "", "Path to config.yaml.")
+	fs.StringVar(&o.jobConfigPath, "job-config-path", "", "Path to prow job configs")
+	fs.StringVar(&o.cookiefilePath, "cookiefile", "", "Path to git http.cookiefile, leave empty for anonymous")
+	fs.Var(&o.projects, "gerrit-projects", "Set of gerrit repos to monitor on a host example: --gerrit-host=https://android.googlesource.com=platform/build,toolchain/llvm, repeat flag for each host")
+	fs.StringVar(&o.lastSyncFallback, "last-sync-fallback", "", "Path to persistent volume to load the last sync time")
+	fs.BoolVar(&o.dryRun, "dry-run", true, "Whether or not to make mutating API calls to GitHub.")
+	o.kubernetes.AddFlags(fs)
+
+	fs.Parse(os.Args[1:])
 	return o
 }
 
@@ -88,12 +99,12 @@ func main() {
 	}
 	cfg := ca.Config
 
-	kc, err := kube.NewClientInCluster(ca.Config().ProwJobNamespace)
+	prowJobClient, err := o.kubernetes.ProwJobClient(ca.Config().ProwJobNamespace, o.dryRun)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting kube client.")
 	}
 
-	c, err := adapter.NewController(o.lastSyncFallback, o.cookiefilePath, o.projects, kc, cfg)
+	c, err := adapter.NewController(o.lastSyncFallback, o.cookiefilePath, o.projects, prowJobClient, cfg)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating gerrit client.")
 	}

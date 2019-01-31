@@ -23,7 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 
-	v1 "k8s.io/test-infra/prow/apis/prowjobs/v1"
+	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 	pjlister "k8s.io/test-infra/prow/client/listers/prowjobs/v1"
 	"k8s.io/test-infra/prow/gerrit/client"
 	"k8s.io/test-infra/prow/kube"
@@ -58,9 +58,9 @@ func (c *Client) GetName() string {
 }
 
 // ShouldReport returns if this prowjob should be reported by the gerrit reporter
-func (c *Client) ShouldReport(pj *v1.ProwJob) bool {
+func (c *Client) ShouldReport(pj *prowapi.ProwJob) bool {
 
-	if pj.Status.State == v1.TriggeredState || pj.Status.State == v1.PendingState {
+	if pj.Status.State == prowapi.TriggeredState || pj.Status.State == prowapi.PendingState {
 		// not done yet
 		logrus.WithField("prowjob", pj.ObjectMeta.Name).Info("PJ not finished")
 		return false
@@ -86,7 +86,7 @@ func (c *Client) ShouldReport(pj *v1.ProwJob) bool {
 	}
 
 	for _, pj := range pjs {
-		if pj.Status.State == v1.TriggeredState || pj.Status.State == v1.PendingState {
+		if pj.Status.State == prowapi.TriggeredState || pj.Status.State == prowapi.PendingState {
 			// other jobs are still running on this revision, skip report
 			logrus.WithField("prowjob", pj.ObjectMeta.Name).Info("Other jobs are still running on this revision")
 			return false
@@ -97,7 +97,7 @@ func (c *Client) ShouldReport(pj *v1.ProwJob) bool {
 }
 
 // Report will send the current prowjob status as a gerrit review
-func (c *Client) Report(pj *v1.ProwJob) error {
+func (c *Client) Report(pj *prowapi.ProwJob) error {
 	// If you are hitting here, which means the entire patchset has been finished :-)
 
 	clientGerritRevision := client.GerritRevision
@@ -127,7 +127,7 @@ func (c *Client) Report(pj *v1.ProwJob) error {
 			return nil
 		}
 
-		if pjOnRevision.Status.State == v1.SuccessState {
+		if pjOnRevision.Status.State == prowapi.SuccessState {
 			success++
 		}
 

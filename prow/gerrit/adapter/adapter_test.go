@@ -21,9 +21,10 @@ import (
 	"testing"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/test-infra/prow/client/clientset/versioned/fake"
 	"k8s.io/test-infra/prow/gerrit/client"
 
-	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 	"k8s.io/test-infra/prow/config"
 )
 
@@ -36,18 +37,6 @@ func (f *fca) Config() *config.Config {
 	f.Lock()
 	defer f.Unlock()
 	return f.c
-}
-
-type fkc struct {
-	sync.Mutex
-	prowjobs []prowapi.ProwJob
-}
-
-func (f *fkc) CreateProwJob(pj prowapi.ProwJob) (prowapi.ProwJob, error) {
-	f.Lock()
-	defer f.Unlock()
-	f.prowjobs = append(f.prowjobs, pj)
-	return pj, nil
 }
 
 type fgc struct{}
@@ -324,6 +313,9 @@ func TestProcessChange(t *testing.T) {
 
 		fca := &fca{
 			c: &config.Config{
+				ProwConfig: config.ProwConfig{
+					ProwJobNamespace: "prowjobs",
+				},
 				JobConfig: config.JobConfig{
 					Presubmits: map[string][]config.Presubmit{
 						"gerrit/test-infra": testInfraPresubmits,
@@ -349,12 +341,12 @@ func TestProcessChange(t *testing.T) {
 			},
 		}
 
-		fkc := &fkc{}
+		fakeProwJobClient := fake.NewSimpleClientset()
 
 		c := &Controller{
-			config: fca.Config,
-			kc:     fkc,
-			gc:     &fgc{},
+			config:        fca.Config,
+			prowJobClient: fakeProwJobClient.ProwV1().ProwJobs(fca.Config().ProwJobNamespace),
+			gc:            &fgc{},
 		}
 
 		err := c.ProcessChange("https://gerrit", tc.change)
@@ -366,23 +358,28 @@ func TestProcessChange(t *testing.T) {
 			continue
 		}
 
-		if len(fkc.prowjobs) != tc.numPJ {
-			t.Errorf("tc %s - should make %d prowjob, got %d", tc.name, tc.numPJ, len(fkc.prowjobs))
+		actualProwJobs, err := fakeProwJobClient.ProwV1().ProwJobs(fca.Config().ProwJobNamespace).List(metav1.ListOptions{})
+		if err != nil {
+			t.Fatalf("tc %s - could not list prowjobs: %v", err)
+		}
+		if len(actualProwJobs.Items) != tc.numPJ {
+			t.Errorf("tc %s - should make %d prowjob, got %d", tc.name, tc.numPJ, len(actualProwJobs.Items))
 		}
 
-		if len(fkc.prowjobs) > 0 {
-			refs := fkc.prowjobs[0].Spec.Refs
+		if len(actualProwJobs.Items) > 0 {
+			expectedJob := actualProwJobs.Items[0]
+			refs := expectedJob.Spec.Refs
 			if refs.Org != "gerrit" {
 				t.Errorf("%s: org %s != gerrit", tc.name, refs.Org)
 			}
 			if refs.Repo != tc.change.Project {
 				t.Errorf("%s: repo %s != expected %s", tc.name, refs.Repo, tc.change.Project)
 			}
-			if fkc.prowjobs[0].Spec.Refs.Pulls[0].Ref != tc.pjRef {
-				t.Errorf("tc %s - ref should be %s, got %s", tc.name, tc.pjRef, fkc.prowjobs[0].Spec.Refs.Pulls[0].Ref)
+			if expectedJob.Spec.Refs.Pulls[0].Ref != tc.pjRef {
+				t.Errorf("tc %s - ref should be %s, got %s", tc.name, tc.pjRef, expectedJob.Spec.Refs.Pulls[0].Ref)
 			}
-			if fkc.prowjobs[0].Spec.Refs.BaseSHA != "abc" {
-				t.Errorf("tc %s - BaseSHA should be abc, got %s", tc.name, fkc.prowjobs[0].Spec.Refs.BaseSHA)
+			if expectedJob.Spec.Refs.BaseSHA != "abc" {
+				t.Errorf("tc %s - BaseSHA should be abc, got %s", tc.name, expectedJob.Spec.Refs.BaseSHA)
 			}
 		}
 	}
