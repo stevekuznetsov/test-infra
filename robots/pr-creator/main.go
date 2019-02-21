@@ -93,7 +93,7 @@ func main() {
 		logrus.WithError(err).Fatal("Failed to start secrets agent")
 	}
 
-	gc, err := o.github.GitHubClient(jamesBond, !o.confirm)
+	gc, err := o.github.GitHubClient(jamesBond, !o.confirm, logrus.Fields{"component": "pr-creator"})
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to create github client")
 	}

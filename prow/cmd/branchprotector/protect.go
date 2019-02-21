@@ -84,8 +84,9 @@ func (e *Errors) add(err error) {
 }
 
 func main() {
+	componentField := logrus.Fields{"component": "branchprotector"}
 	logrus.SetFormatter(
-		logrusutil.NewDefaultFieldsFormatter(nil, logrus.Fields{"component": "branchprotector"}),
+		logrusutil.NewDefaultFieldsFormatter(nil, componentField),
 	)
 
 	o := gatherOptions()
@@ -103,7 +104,7 @@ func main() {
 		logrus.WithError(err).Fatal("Error starting secrets agent.")
 	}
 
-	githubClient, err := o.github.GitHubClient(secretAgent, !o.confirm)
+	githubClient, err := o.github.GitHubClient(secretAgent, !o.confirm, componentField)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting GitHub client.")
 	}

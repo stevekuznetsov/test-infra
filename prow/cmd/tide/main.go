@@ -86,8 +86,9 @@ func main() {
 		logrus.Fatalf("Invalid options: %v", err)
 	}
 
+	componentField := logrus.Fields{"component": "tide"}
 	logrus.SetFormatter(
-		logrusutil.NewDefaultFieldsFormatter(nil, logrus.Fields{"component": "tide"}),
+		logrusutil.NewDefaultFieldsFormatter(nil, componentField),
 	)
 
 	configAgent := &config.Agent{}
@@ -101,12 +102,12 @@ func main() {
 		logrus.WithError(err).Fatal("Error starting secrets agent.")
 	}
 
-	githubSync, err := o.github.GitHubClient(secretAgent, o.dryRun)
+	githubSync, err := o.github.GitHubClient(secretAgent, o.dryRun, logrus.Fields{"component": componentField["component"], "controller": "sync"})
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting GitHub client.")
 	}
 
-	githubStatus, err := o.github.GitHubClient(secretAgent, o.dryRun)
+	githubStatus, err := o.github.GitHubClient(secretAgent, o.dryRun, logrus.Fields{"component": componentField["component"], "controller": "status-update"})
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting GitHub client.")
 	}

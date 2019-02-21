@@ -46,7 +46,7 @@ func (o options) githubClient() (*github.Client, error) {
 	if err := agent.Start([]string{o.TokenPath}); err != nil {
 		return nil, fmt.Errorf("start %s: %v", o.TokenPath, err)
 	}
-	return o.GitHubClient(agent, !o.confirm)
+	return o.GitHubClient(agent, !o.confirm, logrus.Fields{"component": "add-hook"})
 }
 
 func getOptions(fs *flag.FlagSet, args []string) (*options, error) {

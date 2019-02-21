@@ -79,8 +79,9 @@ func main() {
 		logrus.WithError(err).Fatal("Invalid options")
 	}
 
+	componentField := logrus.Fields{"component": "status-reconciler"}
 	logrus.SetFormatter(
-		logrusutil.NewDefaultFieldsFormatter(nil, logrus.Fields{"component": "status-reconciler"}),
+		logrusutil.NewDefaultFieldsFormatter(nil, componentField),
 	)
 
 	configAgent := &config.Agent{}
@@ -102,7 +103,7 @@ func main() {
 		logrus.WithError(err).Fatal("Error starting plugin configuration agent.")
 	}
 
-	githubClient, err := o.github.GitHubClient(secretAgent, o.dryRun)
+	githubClient, err := o.github.GitHubClient(secretAgent, o.dryRun, componentField)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting GitHub client.")
 	}

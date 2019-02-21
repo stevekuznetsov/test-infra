@@ -203,9 +203,9 @@ func (c *Client) Throttle(hourlyTokens, burst int) {
 //   An endpoint is used when all preceding endpoints have returned a conn err.
 //   This should be used when using the ghproxy GitHub proxy cache to allow
 //   this client to bypass the cache if it is temporarily unavailable.
-func NewClient(getToken func() []byte, bases ...string) *Client {
+func NewClient(fields logrus.Fields, getToken func() []byte, bases ...string) *Client {
 	return &Client{
-		logger: logrus.WithField("client", "github"),
+		logger: logrus.WithFields(fields).WithField("client", "github"),
 		time:   &standardTime{},
 		gqlc: githubql.NewClient(&http.Client{
 			Timeout:   maxRequestTime,
@@ -226,9 +226,9 @@ func NewClient(getToken func() []byte, bases ...string) *Client {
 //   An endpoint is used when all preceding endpoints have returned a conn err.
 //   This should be used when using the ghproxy GitHub proxy cache to allow
 //   this client to bypass the cache if it is temporarily unavailable.
-func NewDryRunClient(getToken func() []byte, bases ...string) *Client {
+func NewDryRunClient(fields logrus.Fields, getToken func() []byte, bases ...string) *Client {
 	return &Client{
-		logger: logrus.WithField("client", "github"),
+		logger: logrus.WithFields(fields).WithField("client", "github"),
 		time:   &standardTime{},
 		gqlc: githubql.NewClient(&http.Client{
 			Timeout:   maxRequestTime,

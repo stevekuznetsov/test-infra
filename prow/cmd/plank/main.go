@@ -91,8 +91,9 @@ func main() {
 		logrus.WithError(err).Fatal("Invalid options")
 	}
 
+	componentField := logrus.Fields{"component": "plank"}
 	logrus.SetFormatter(
-		logrusutil.NewDefaultFieldsFormatter(nil, logrus.Fields{"component": "plank"}),
+		logrusutil.NewDefaultFieldsFormatter(nil, componentField),
 	)
 
 	configAgent := &config.Agent{}
@@ -108,7 +109,7 @@ func main() {
 		}
 	}
 
-	githubClient, err := o.github.GitHubClient(secretAgent, o.dryRun)
+	githubClient, err := o.github.GitHubClient(secretAgent, o.dryRun, componentField)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting GitHub client.")
 	}

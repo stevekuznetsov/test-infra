@@ -172,7 +172,7 @@ func main() {
 			logrus.Fatalf("Failed to start secret agent: %v", err)
 		}
 	}
-	o.githubClient, err = o.github.GitHubClient(secretAgent, false)
+	o.githubClient, err = o.github.GitHubClient(secretAgent, false, logrus.Fields{"component": "mkpj"})
 	if err != nil {
 		logrus.Fatalf("failed to get Github client: %v", err)
 	}

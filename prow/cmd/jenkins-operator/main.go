@@ -127,8 +127,9 @@ func main() {
 	if err := o.Validate(); err != nil {
 		logrus.Fatalf("Invalid options: %v", err)
 	}
+	componentField := logrus.Fields{"component": "jenkins-operator"}
 	logrus.SetFormatter(
-		logrusutil.NewDefaultFieldsFormatter(nil, logrus.Fields{"component": "jenkins-operator"}),
+		logrusutil.NewDefaultFieldsFormatter(nil, componentField),
 	)
 
 	if _, err := labels.Parse(o.selector); err != nil {
@@ -191,7 +192,7 @@ func main() {
 		logrus.WithError(err).Fatalf("Could not setup Jenkins client.")
 	}
 
-	githubClient, err := o.github.GitHubClient(secretAgent, o.dryRun)
+	githubClient, err := o.github.GitHubClient(secretAgent, o.dryRun, componentField)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting GitHub client.")
 	}

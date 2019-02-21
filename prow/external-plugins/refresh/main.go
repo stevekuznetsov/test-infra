@@ -28,7 +28,6 @@ import (
 	"syscall"
 
 	"github.com/sirupsen/logrus"
-
 	"k8s.io/test-infra/pkg/flagutil"
 	"k8s.io/test-infra/prow/config"
 	"k8s.io/test-infra/prow/config/secret"
@@ -85,7 +84,8 @@ func main() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	// TODO: Use global option from the prow config.
 	logrus.SetLevel(logrus.DebugLevel)
-	log := logrus.StandardLogger().WithField("plugin", "refresh")
+	pluginField := logrus.Fields{"plugin": "refresh"}
+	log := logrus.StandardLogger().WithFields(pluginField)
 
 	// Ignore SIGTERM so that we don't drop hooks when the pod is removed.
 	// We'll get SIGTERM first and then SIGKILL after our graceful termination
@@ -102,7 +102,7 @@ func main() {
 		logrus.WithError(err).Fatal("Error starting secrets agent.")
 	}
 
-	githubClient, err := o.github.GitHubClient(secretAgent, o.dryRun)
+	githubClient, err := o.github.GitHubClient(secretAgent, o.dryRun, pluginField)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting GitHub client.")
 	}

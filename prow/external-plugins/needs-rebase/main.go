@@ -90,7 +90,8 @@ func main() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	// TODO: Use global option from the prow config.
 	logrus.SetLevel(logrus.InfoLevel)
-	log := logrus.StandardLogger().WithField("plugin", labels.NeedsRebase)
+	pluginField := logrus.Fields{"plugin": labels.NeedsRebase}
+	log := logrus.StandardLogger().WithFields(pluginField)
 
 	// Ignore SIGTERM so that we don't drop hooks when the pod is removed.
 	// We'll get SIGTERM first and then SIGKILL after our graceful termination
@@ -107,7 +108,7 @@ func main() {
 		log.WithError(err).Fatalf("Error loading plugin config from %q.", o.pluginConfig)
 	}
 
-	githubClient, err := o.github.GitHubClient(secretAgent, o.dryRun)
+	githubClient, err := o.github.GitHubClient(secretAgent, o.dryRun, pluginField)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting GitHub client.")
 	}

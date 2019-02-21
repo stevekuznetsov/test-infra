@@ -79,7 +79,7 @@ func (o *GitHubOptions) Validate(dryRun bool) error {
 }
 
 // GitHubClient returns a GitHub client.
-func (o *GitHubOptions) GitHubClient(secretAgent *secret.Agent, dryRun bool) (client *github.Client, err error) {
+func (o *GitHubOptions) GitHubClient(secretAgent *secret.Agent, dryRun bool, fields logrus.Fields) (client *github.Client, err error) {
 	var generator *func() []byte
 	if o.TokenPath == "" {
 		generatorFunc := func() []byte {
@@ -95,9 +95,9 @@ func (o *GitHubOptions) GitHubClient(secretAgent *secret.Agent, dryRun bool) (cl
 	}
 
 	if dryRun {
-		return github.NewDryRunClient(*generator, o.endpoint.Strings()...), nil
+		return github.NewDryRunClient(fields, *generator, o.endpoint.Strings()...), nil
 	}
-	return github.NewClient(*generator, o.endpoint.Strings()...), nil
+	return github.NewClient(fields, *generator, o.endpoint.Strings()...), nil
 }
 
 // GitClient returns a Git client.
@@ -117,7 +117,7 @@ func (o *GitHubOptions) GitClient(secretAgent *secret.Agent, dryRun bool) (clien
 	}(client)
 
 	// Get the bot's name in order to set credentials for the Git client.
-	githubClient, err := o.GitHubClient(secretAgent, dryRun)
+	githubClient, err := o.GitHubClient(secretAgent, dryRun, logrus.Fields{"component": "flagutil"})
 	if err != nil {
 		return nil, fmt.Errorf("error getting GitHub client: %v", err)
 	}

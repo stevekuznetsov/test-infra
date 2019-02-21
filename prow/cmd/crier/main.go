@@ -139,8 +139,9 @@ func parseOptions() options {
 func main() {
 	o := parseOptions()
 
+	componentField := logrus.Fields{"component": "crier"}
 	logrus.SetFormatter(
-		logrusutil.NewDefaultFieldsFormatter(nil, logrus.Fields{"component": "crier"}),
+		logrusutil.NewDefaultFieldsFormatter(nil, componentField),
 	)
 
 	configAgent := &config.Agent{}
@@ -200,7 +201,7 @@ func main() {
 			}
 		}
 
-		githubClient, err := o.github.GitHubClient(secretAgent, o.dryrun)
+		githubClient, err := o.github.GitHubClient(secretAgent, o.dryrun, componentField)
 		if err != nil {
 			logrus.WithError(err).Fatal("Error getting GitHub client.")
 		}

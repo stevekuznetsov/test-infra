@@ -120,8 +120,9 @@ func (o *options) parseArgs(flags *flag.FlagSet, args []string) error {
 }
 
 func main() {
+	componentField := logrus.Fields{"component": "peribolos"}
 	logrus.SetFormatter(
-		logrusutil.NewDefaultFieldsFormatter(nil, logrus.Fields{"component": "peribolos"}),
+		logrusutil.NewDefaultFieldsFormatter(nil, componentField),
 	)
 	o := parseOptions()
 
@@ -130,7 +131,7 @@ func main() {
 		logrus.WithError(err).Fatal("Error starting secrets agent.")
 	}
 
-	githubClient, err := o.github.GitHubClient(secretAgent, !o.confirm)
+	githubClient, err := o.github.GitHubClient(secretAgent, !o.confirm, componentField)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting GitHub client.")
 	}
