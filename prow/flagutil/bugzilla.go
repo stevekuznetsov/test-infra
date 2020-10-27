@@ -29,13 +29,15 @@ import (
 
 // BugzillaOptions holds options for interacting with Bugzilla.
 type BugzillaOptions struct {
-	endpoint   string
-	ApiKeyPath string
+	endpoint                string
+	githubExternalTrackerId int
+	ApiKeyPath              string
 }
 
 // AddFlags injects Bugzilla options into the given FlagSet.
 func (o *BugzillaOptions) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&o.endpoint, "bugzilla-endpoint", "", "Bugzilla's API endpoint.")
+	fs.IntVar(&o.githubExternalTrackerId, "--bugzilla-github-external-tracker-id", 0, "The ext_type_id for GitHub external bugs, optional.")
 	fs.StringVar(&o.ApiKeyPath, "bugzilla-api-key-path", "", "Path to the file containing the Bugzilla API key.")
 }
 
@@ -48,6 +50,10 @@ func (o *BugzillaOptions) Validate(dryRun bool) error {
 
 	if _, err := url.ParseRequestURI(o.endpoint); err != nil {
 		return fmt.Errorf("invalid -bugzilla-endpoint URI: %q", o.endpoint)
+	}
+
+	if o.githubExternalTrackerId < 0 {
+		return fmt.Errorf("--bugzilla-github-external-tracker-id was %d but cannot be negative", o.githubExternalTrackerId)
 	}
 
 	if o.ApiKeyPath == "" {
@@ -77,5 +83,5 @@ func (o *BugzillaOptions) BugzillaClient(secretAgent *secret.Agent) (bugzilla.Cl
 		generator = &generatorFunc
 	}
 
-	return bugzilla.NewClient(*generator, o.endpoint), nil
+	return bugzilla.NewClient(*generator, o.endpoint, o.githubExternalTrackerId), nil
 }

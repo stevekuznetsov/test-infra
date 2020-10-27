@@ -36,20 +36,22 @@ type Client interface {
 	AddPullRequestAsExternalBug(id int, org, repo string, num int) (bool, error)
 }
 
-func NewClient(getAPIKey func() []byte, endpoint string) Client {
+func NewClient(getAPIKey func() []byte, endpoint string, githubExternalTrackerId int) Client {
 	return &client{
-		logger:    logrus.WithField("client", "bugzilla"),
-		client:    &http.Client{},
-		endpoint:  endpoint,
-		getAPIKey: getAPIKey,
+		logger:                  logrus.WithField("client", "bugzilla"),
+		client:                  &http.Client{},
+		endpoint:                endpoint,
+		githubExternalTrackerId: githubExternalTrackerId,
+		getAPIKey:               getAPIKey,
 	}
 }
 
 type client struct {
-	logger    *logrus.Entry
-	client    *http.Client
-	endpoint  string
-	getAPIKey func() []byte
+	logger                  *logrus.Entry
+	client                  *http.Client
+	endpoint                string
+	githubExternalTrackerId int
+	getAPIKey               func() []byte
 }
 
 // the client is a Client impl
@@ -214,6 +216,14 @@ func IsNotFound(err error) bool {
 func (c *client) AddPullRequestAsExternalBug(id int, org, repo string, num int) (bool, error) {
 	logger := c.logger.WithFields(logrus.Fields{"method": "AddExternalBug", "id": id, "org": org, "repo": repo, "num": num})
 	pullIdentifier := IdentifierForPull(org, repo, num)
+	bugIdentifier := NewExternalBugIdentifier{
+		ID: pullIdentifier,
+	}
+	if c.githubExternalTrackerId != 0 {
+		bugIdentifier.TrackerID = c.githubExternalTrackerId
+	} else {
+		bugIdentifier.Type = "https://github.com/"
+	}
 	rpcPayload := struct {
 		// Version is the version of JSONRPC to use. All Bugzilla servers
 		// support 1.0. Some support 1.1 and some support 2.0
@@ -230,10 +240,7 @@ func (c *client) AddPullRequestAsExternalBug(id int, org, repo string, num int) 
 		Parameters: []AddExternalBugParameters{{
 			APIKey: string(c.getAPIKey()),
 			BugIDs: []int{id},
-			ExternalBugs: []NewExternalBugIdentifier{{
-				Type: "https://github.com/",
-				ID:   pullIdentifier,
-			}},
+			ExternalBugs: []NewExternalBugIdentifier{bugIdentifier},
 		}},
 	}
 	body, err := json.Marshal(rpcPayload)
