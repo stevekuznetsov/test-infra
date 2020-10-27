@@ -19,16 +19,15 @@ package bugzilla
 import (
 	"crypto/tls"
 	"encoding/json"
+	"github.com/google/go-cmp/cmp"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/diff"
 )
 
 var (
@@ -93,8 +92,8 @@ func TestGetBug(t *testing.T) {
 	if err != nil {
 		t.Errorf("expected no error, but got one: %v", err)
 	}
-	if !reflect.DeepEqual(bug, bugStruct) {
-		t.Errorf("got incorrect bug: %v", diff.ObjectReflectDiff(bug, bugStruct))
+	if diff := cmp.Diff(bug, bugStruct); diff != "" {
+		t.Errorf("got incorrect bug: %v", diff)
 	}
 
 	// this should 404
@@ -268,8 +267,8 @@ func TestAddPullRequestAsExternalBug(t *testing.T) {
 		}
 		for _, testCase := range testCases {
 			if payload.Parameters[0].BugIDs[0] == testCase.id {
-				if actual, expected := string(raw), testCase.expectedPayload; actual != expected {
-					t.Errorf("%s: got incorrect JSONRPC payload: %v", testCase.name, diff.ObjectReflectDiff(expected, actual))
+				if diff := cmp.Diff(string(raw), testCase.expectedPayload); diff != "" {
+					t.Errorf("%s: got incorrect JSONRPC payload: %v", testCase.name, diff)
 				}
 				if _, err := w.Write([]byte(testCase.response)); err != nil {
 					t.Fatalf("%s: failed to send JSONRPC response: %v", testCase.name, err)
@@ -495,8 +494,8 @@ func TestGetExternalBugPRsOnBug(t *testing.T) {
 			if testCase.expectedError && err == nil {
 				t.Errorf("%s: expected an error, but got none", testCase.name)
 			}
-			if actual, expected := prs, testCase.expectedPRs; !reflect.DeepEqual(actual, expected) {
-				t.Errorf("%s: got incorrect prs: %v", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			if diff := cmp.Diff(prs, testCase.expectedPRs); diff != "" {
+				t.Errorf("%s: got incorrect prs: %v", testCase.name, diff)
 			}
 		})
 	}
